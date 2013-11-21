@@ -1,0 +1,2 @@
+class ExitSelectionError( Exception ):
+    pass
