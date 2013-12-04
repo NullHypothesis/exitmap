@@ -48,8 +48,6 @@ class EventHandler( object ):
         if circEvent.status != stem.CircStatus.BUILT:
             return
 
-        logger.info(str(circEvent))
-
         exitFpr = circEvent.path[-1][0]
         logger.info("Circuit for exit relay \"%s\" is built.  " \
                     "Now invoking probing module." % exitFpr)
@@ -65,10 +63,7 @@ class EventHandler( object ):
            streamEvent.status != stem.StreamStatus.NEWRESOLVE:
             return
 
-        logger.info("New stream event: " + str(streamEvent))
         sourcePort = getSourcePort(str(streamEvent))
-        logger.debug("Source port: %d" % sourcePort)
-
         if not sourcePort:
             logger.error("Couldn't extract source port from stream event: %s" %
                          str(streamEvent))
@@ -77,12 +72,12 @@ class EventHandler( object ):
         circID = self.attachMap[sourcePort]
         del self.attachMap[sourcePort]
 
-        logger.info("Attaching new stream %s to circuit ID %s" %
+        logger.info("Attaching new stream %s to circuit ID %s." %
                     (str(streamEvent), circID))
         try:
             self.torCtrl.attach_stream(streamEvent.id, circID)
         except stem.OperationFailed as err:
-            logger.error("Couldn't attach circuit: %s" % err)
+            logger.error("Couldn't attach circuit: %s" % str(err))
 
     def newEvent( self, event ):
         """
