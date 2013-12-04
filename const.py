@@ -1,4 +1,4 @@
-TOOL_NAME = "scanner"
+TOOL_NAME = "exitmap"
 
 # Entry guard/middle relay used as only hop before the respective exit relay.
 # FIXME: Add your relay's fingerprint here.
