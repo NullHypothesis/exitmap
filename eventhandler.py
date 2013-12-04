@@ -79,9 +79,7 @@ class EventHandler( object ):
                     (str(streamEvent), circID))
         try:
             self.torCtrl.attach_stream(streamEvent.id, circID)
-        except (stem.InvalidRequest,
-                stem.UnsatisfiableRequest,
-                stem.OperationFailed) as err:
+        except stem.OperationFailed as err:
             logger.error("Couldn't attach circuit: %s" % err)
 
     def newEvent( self, event ):
