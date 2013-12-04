@@ -114,7 +114,6 @@ if __name__ == "__main__":
     try:
         exit(main())
     except KeyboardInterrupt:
-        logger.warning("Keyboard interrupt.")
-        exit(1)
+        logger.info("Caught keyboard interrupt.")
     finally:
-        logger.info("Shutting down %s." % const.TOOL_NAME)
+        logger.info("Terminating %s." % const.TOOL_NAME)
