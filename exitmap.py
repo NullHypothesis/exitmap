@@ -98,12 +98,13 @@ def runModule( moduleName, args, torCtrl ):
     torCtrl.add_event_listener(handler.newEvent,
                                EventType.CIRC, EventType.STREAM)
 
+    # Start building a circuit for every exit relay we got.
     for exitRelay in exitRelays:
         try:
-            torCtrl.new_circuit([const.FIRST_HOP, exitRelay],
-                                await_build=False)
-        except stem.ControllerError as error:
-            pass
+            torCtrl.new_circuit([const.FIRST_HOP, exitRelay])
+        except stem.ControllerError as err:
+            logger.warning("Circuit with exit relay \"%s\" could not be " \
+                           "created." % (exitRelay, err))
 
 if __name__ == "__main__":
 
