@@ -83,7 +83,7 @@ def runModule( moduleName, args, torCtrl ):
         exitRelays = [args.exit]
     else:
         hosts = [(socket.gethostbyname(host), port) for
-                 (host, port) in module.targets]
+                 (host, port) in module.destinations]
         exitRelays = exitselector.getExits(args.consensus,
                                            countryCode=args.country,
                                            hosts=hosts)
