@@ -1,7 +1,22 @@
 Installation
 ============
 
-You will need the library [stem](https://stem.torproject.org).
+Prerequisites
+-------------
+
+Before you can run `exitmap` you should make sure that you have the
+following software installed:
+
+* [SocksiPy][]
+* [futures][]
+* [stem][]
+
+Within Debian you can install all components by issuing:
+
+    apt-get install python-socksipy python-concurrent.futures python-stem
+
+Retrieve consensus data
+-----------------------
 
 First, get the current consensus by running:  
 `$ tor -f doc/torrc.fetch`
@@ -9,8 +24,20 @@ First, get the current consensus by running:
 Then, start the bare Tor process which is used by the scanner:  
 `$ tor -f doc/torrc`
 
+Run scanner
+-----------
+
 Finally, you can run the scanner:  
 `$ python scanner.py -c /tmp/tordata/cached-consensus checktest`
+
+[SocksiPy]: https://pypi.python.org/pypi/SocksiPy
+
+[futures]: https://pypi.python.org/pypi/futures/2.1.5
+
+[stem]: https://stem.torproject.org/
+
+
+
 
 Feedback
 ========
