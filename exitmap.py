@@ -74,9 +74,9 @@ def main():
     stem.connection.authenticate_none(torCtrl)
 
     for moduleName in args.module:
-        probe(moduleName, args, torCtrl)
+        runModule(moduleName, args, torCtrl)
 
-def probe( moduleName, args, torCtrl ):
+def runModule( moduleName, args, torCtrl ):
 
     logger.info("Running module '%s'." % moduleName)
     module = __import__("modules.%s" % moduleName, fromlist=[moduleName])
