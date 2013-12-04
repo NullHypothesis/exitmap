@@ -19,6 +19,8 @@ import circuitpool
 import exitselector
 import streamattacher
 
+from eventhandler import EventHandler
+
 logger = log.getLogger()
 
 def parseCmdArgs():
@@ -95,27 +97,17 @@ def probe( moduleName, args, torCtrl ):
                                        "but need at least one." % count)
     logger.info("About to probe %d exit relays." % count)
 
-    # Create circuit pool and set up stream attacher.
-    circuitPool = circuitpool.new(torCtrl, list(exitRelays))
-    eventHandler = streamattacher.new(circuitPool, torCtrl)
-    torCtrl.add_event_listener(eventHandler.newEvent, EventType.STREAM)
+    handler = EventHandler(torCtrl, module.probe)
+    torCtrl.add_event_listener(handler.newEvent,
+                               EventType.CIRC, EventType.STREAM)
 
-    circuits = torCtrl.get_circuits()
-    logger.debug("Open circuits:")
-    for circuit in circuits:
-        logger.debug(circuit)
-
-    executor = ProcessPoolExecutor(max_workers=const.CIRCUIT_POOL_SIZE)
-    logger.debug("Beginning to populate process pool with %d jobs." % count)
-
-    # Invoke a module instance for every exit relay.
-    for _ in xrange(count, 0, -1):
-
-        cmd = command.new(None)
-        executor.submit(module.probe, cmd, count)
-        count -= 1
-
-    logger.info("Submitted jobs.  Terminating main scanner.")
+    for exitRelay in exitRelays:
+        try:
+            torCtrl.new_circuit([const.FIRST_HOP, exitRelay],
+                                await_build=False)
+        except (stem.InvalidRequest, stem.CircuitExtensionFailed,
+                stem.ControllerError) as error:
+            pass
 
 if __name__ == "__main__":
 
