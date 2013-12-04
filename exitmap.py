@@ -3,7 +3,6 @@
 import socket
 import pkgutil
 import argparse
-from concurrent.futures import ProcessPoolExecutor
 
 import stem
 import stem.connection
@@ -15,9 +14,7 @@ import log
 import error
 import const
 import command
-import circuitpool
 import exitselector
-import streamattacher
 
 from eventhandler import EventHandler
 
