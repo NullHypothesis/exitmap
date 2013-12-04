@@ -92,19 +92,20 @@ def runModule( moduleName, args, torCtrl ):
     if count < 1:
         raise error.ExitSelectionError("Exit selection yielded %d exits " \
                                        "but need at least one." % count)
-    logger.info("About to probe %d exit relays." % count)
 
     handler = EventHandler(torCtrl, module.probe)
     torCtrl.add_event_listener(handler.newEvent,
                                EventType.CIRC, EventType.STREAM)
 
     # Start building a circuit for every exit relay we got.
+    logger.debug("Beginning to trigger %d circuit creations." % count)
     for exitRelay in exitRelays:
         try:
             torCtrl.new_circuit([const.FIRST_HOP, exitRelay])
         except stem.ControllerError as err:
             logger.warning("Circuit with exit relay \"%s\" could not be " \
                            "created." % (exitRelay, err))
+    logger.debug("Done triggering circuit creations.")
 
 if __name__ == "__main__":
 
