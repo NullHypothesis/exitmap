@@ -69,7 +69,12 @@ class EventHandler( object ):
                          str(streamEvent))
             return
 
-        circID = self.attachMap[sourcePort]
+        try:
+            circID = self.attachMap[sourcePort]
+        except KeyError:
+            logger.error("Couldn't find source port %d in lookup table." %
+                         sourcePort)
+            return
         del self.attachMap[sourcePort]
 
         logger.info("Attaching new stream %s to circuit ID %s." %
