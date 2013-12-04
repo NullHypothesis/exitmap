@@ -15,7 +15,7 @@ def getSourcePort( streamLine ):
     if match:
         return int(match.group(1))
 
-    return -1
+    return None
 
 class EventHandler( object ):
 
@@ -67,10 +67,12 @@ class EventHandler( object ):
 
         logger.info("New stream event: " + str(streamEvent))
         sourcePort = getSourcePort(str(streamEvent))
-        assert sourcePort != -1
         logger.debug("Source port: %d" % sourcePort)
 
-        logger.debug("Checking attach dictionary.")
+        if not sourcePort:
+            logger.error("Couldn't extract source port from stream event: %s" %
+                         str(streamEvent))
+            return
 
         circID = self.attachMap[sourcePort]
         del self.attachMap[sourcePort]
