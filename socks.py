@@ -38,6 +38,8 @@ PROXY_TYPE_SOCKS5 = 2
 PROXY_TYPE_HTTP = 3
 
 _defaultproxy = None
+_queue = None
+_circID = None
 _orgsocket = socket.socket
 
 class ProxyError(Exception):
@@ -113,6 +115,12 @@ def setdefaultproxy(proxytype=None,addr=None,port=None,rdns=True,username=None,p
 	"""
 	global _defaultproxy
 	_defaultproxy = (proxytype,addr,port,rdns,username,password)
+
+def setqueue(queue, circID):
+	global _queue
+	global _circID
+	_queue = queue
+	_circID = circID
 	
 class socksocket(socket.socket):
 	"""socksocket([family[, type[, proto]]]) -> socket object
@@ -252,6 +260,20 @@ class socksocket(socket.socket):
 		else:
 			self.__proxypeername = (destaddr,destport)
 	
+	def _connect(self, ref, address):
+		# Call the original connect() implementation.
+		_orgsocket.connect(ref, address)
+
+		global _queue
+		global _circID
+
+		# The multiprocessing module needs the original socket.socket.
+		current = socket.socket
+		socket.socket = _orgsocket
+		# Report our source port back to exitmap.
+		_queue.put([_circID, _orgsocket.getsockname(ref)])
+		socket.socket = current
+
 	def getproxysockname(self):
 		"""getsockname() -> address info
 		Returns the bound IP address and port number at the proxy.
@@ -365,23 +387,23 @@ class socksocket(socket.socket):
 				portnum = self.__proxy[2]
 			else:
 				portnum = 1080
-			_orgsocket.connect(self,(self.__proxy[1],portnum))
+			self._connect(self,(self.__proxy[1],portnum))
 			self.__negotiatesocks5(destpair[0],destpair[1])
 		elif self.__proxy[0] == PROXY_TYPE_SOCKS4:
 			if self.__proxy[2] != None:
 				portnum = self.__proxy[2]
 			else:
 				portnum = 1080
-			_orgsocket.connect(self,(self.__proxy[1],portnum))
+			self._connect(self,(self.__proxy[1],portnum))
 			self.__negotiatesocks4(destpair[0],destpair[1])
 		elif self.__proxy[0] == PROXY_TYPE_HTTP:
 			if self.__proxy[2] != None:
 				portnum = self.__proxy[2]
 			else:
 				portnum = 8080
-			_orgsocket.connect(self,(self.__proxy[1],portnum))
+			self._connect(self,(self.__proxy[1],portnum))
 			self.__negotiatehttp(destpair[0],destpair[1])
 		elif self.__proxy[0] == None:
-			_orgsocket.connect(self,(destpair[0],destpair[1]))
+			self._connect(self,(destpair[0],destpair[1]))
 		else:
 			raise GeneralProxyError((4,_generalerrors[4]))
