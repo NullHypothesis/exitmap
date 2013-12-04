@@ -102,8 +102,7 @@ def runModule( moduleName, args, torCtrl ):
         try:
             torCtrl.new_circuit([const.FIRST_HOP, exitRelay],
                                 await_build=False)
-        except (stem.InvalidRequest, stem.CircuitExtensionFailed,
-                stem.ControllerError) as error:
+        except stem.ControllerError as error:
             pass
 
 if __name__ == "__main__":
