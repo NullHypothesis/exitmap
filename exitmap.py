@@ -104,7 +104,7 @@ def runModule( moduleName, args, torCtrl ):
             torCtrl.new_circuit([const.FIRST_HOP, exitRelay])
         except stem.ControllerError as err:
             logger.warning("Circuit with exit relay \"%s\" could not be " \
-                           "created." % (exitRelay, err))
+                           "created: %s" % (exitRelay, err))
     logger.debug("Done triggering circuit creations.")
 
 if __name__ == "__main__":
