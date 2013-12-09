@@ -3,6 +3,7 @@
 import socket
 import pkgutil
 import argparse
+import datetime
 
 import stem
 import stem.connection
@@ -101,6 +102,7 @@ def runModule( moduleName, args, torCtrl, stats ):
                                EventType.CIRC, EventType.STREAM)
 
     # Start building a circuit for every exit relay we got.
+    before = datetime.datetime.now()
     logger.debug("Beginning to trigger %d circuit creations." % count)
     for exitRelay in exitRelays:
         try:
@@ -109,7 +111,8 @@ def runModule( moduleName, args, torCtrl, stats ):
             stats.failedCircuits += 1
             logger.warning("Circuit with exit relay \"%s\" could not be " \
                            "created: %s" % (exitRelay, err))
-    logger.debug("Done triggering circuit creations.")
+    logger.debug("Done triggering circuit creations after %s." %
+                 str(datetime.datetime.now() - before))
     stats.modulesRun += 1
 
 if __name__ == "__main__":
