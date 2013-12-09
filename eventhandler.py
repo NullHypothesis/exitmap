@@ -32,6 +32,12 @@ class EventHandler( object ):
         self.probingModule = probingModule
         self.finishedStreams = 0
 
+        self.ourStreamEvents = [ StreamStatus.NEW, StreamStatus.NEWRESOLVE,
+                                 StreamStatus.CLOSED, StreamStatus.FAILED,
+                                 StreamStatus.DETACHED]
+        self.ourCircuitEvents = [ CircStatus.BUILT, CircStatus.FAILED,
+                                  CircStatus.CLOSED ]
+
         self.manager = multiprocessing.Manager()
         self.queue = self.manager.Queue()
 
@@ -49,20 +55,51 @@ class EventHandler( object ):
 
         while True:
             circID, sockname = self.queue.get()
+            # This is our signal to stop.
             if (circID == None) and (sockname == None):
                 break
+
             _, port = sockname[0], int(sockname[1])
             logger.debug("Read from queue: %s, %s" % (circID, str(sockname)))
             self.attachMap[port] = circID
 
         logger.info("Stopping to read from IPC queue.")
 
+    def isFinished( self ):
+        """
+        Check if the scan is finished and if it is, shut down exitmap.
+        """
+
+        # Did all circuits either build or fail?
+        circsDone = (self.stats.failedCircuits + \
+                     self.stats.successfulCircuits) == self.stats.totalCircuits
+
+        # Was every built circuit attached to a stream?
+        streamsDone = (self.finishedStreams >= self.stats.successfulCircuits)
+
+        logger.debug("failedCircs=%d, builtCircs=%d, totalCircs=%d, " \
+                     "finishedStreams=%d" % (self.stats.failedCircuits,
+                      self.stats.successfulCircuits, self.stats.totalCircuits,
+                      self.finishedStreams))
+
+        if circsDone and streamsDone:
+            # Terminate the thread which handles the queue.
+            self.queue.put((None, None))
+            logger.info("Finished scan: %s" % self.stats)
+            exit(0)
+
     def newCircuit( self, circEvent ):
         """
         Invoke a new probing module when a new circuit becomes ready.
         """
 
-        if circEvent.status != CircStatus.BUILT:
+        if circEvent.status not in self.ourCircuitEvents:
+            return
+
+        # Keep track of how many circuits are already finished.
+        if circEvent.status in [CircStatus.FAILED,  CircStatus.CLOSED]:
+            logger.info("Circuit closed because: %s" % str(circEvent.reason))
+            self.stats.failedCircuits += 1
             return
 
         self.stats.successfulCircuits += 1
@@ -82,23 +119,16 @@ class EventHandler( object ):
 
         The missing link between the stream and its corresponding circuit is
         the TCP source port.  Probing modules inform exitmap about their source
-        port by writing it to the queue.
+        port by using a queue for inter-process communication.
         """
 
-        if streamEvent.status != StreamStatus.NEW and \
-           streamEvent.status != StreamStatus.NEWRESOLVE and \
-           streamEvent.status != StreamStatus.CLOSED:
+        if streamEvent.status not in self.ourStreamEvents:
             return
 
-        # We keep track of closed streams and, if necessary, terminate
-        # exitmap.
-        if streamEvent.status == StreamStatus.CLOSED:
+        # Keep track of how many streams are already finished.
+        if streamEvent.status in [StreamStatus.CLOSED, StreamStatus.FAILED,
+                                  StreamStatus.DETACHED]:
             self.finishedStreams += 1
-            if (self.stats.successfulCircuits == self.finishedStreams):
-                self.queue.put((None, None))
-                logger.info("Shutting down %s: %s" %
-                            (const.TOOL_NAME, self.stats))
-                exit(0)
             return
 
         sourcePort = util.getSourcePort(str(streamEvent))
@@ -135,3 +165,5 @@ class EventHandler( object ):
 
         else:
             logger.warning("Received unexpected event: " % str(event))
+
+        self.isFinished()
