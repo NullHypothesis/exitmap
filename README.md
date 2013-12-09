@@ -21,14 +21,14 @@ Retrieve consensus data
 First, get the current consensus by running:  
 `$ tor -f doc/torrc.fetch`
 
-Then, start the bare Tor process which is used by the scanner:  
+Then, start the bare Tor process which is used by `exitmap`:  
 `$ tor -f doc/torrc`
 
-Run scanner
------------
+Run `exitmap`
+-------------
 
-Finally, you can run the scanner:  
-`$ python scanner.py -c /tmp/tordata/cached-consensus checktest`
+Finally, you can run `exitmap`:  
+`$ python exitmap.py -c /tmp/tordata/cached-consensus checktest`
 
 [SocksiPy]: https://pypi.python.org/pypi/SocksiPy
 
