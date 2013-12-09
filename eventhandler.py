@@ -1,21 +1,12 @@
-import re
 import threading
 import multiprocessing
 
 import stem
 
+import util
 import log
 
 logger = log.getLogger()
-
-def getSourcePort( streamLine ):
-
-    pattern = "SOURCE_ADDR=[0-9\.]{7,15}:([0-9]{1,5})"
-    match = re.search(pattern, streamLine)
-    if match:
-        return int(match.group(1))
-
-    return None
 
 class EventHandler( object ):
 
@@ -84,7 +75,7 @@ class EventHandler( object ):
                 exit(0)
             return
 
-        sourcePort = getSourcePort(str(streamEvent))
+        sourcePort = util.getSourcePort(str(streamEvent))
         if not sourcePort:
             logger.error("Couldn't extract source port from stream event: %s" %
                          str(streamEvent))
