@@ -2,13 +2,24 @@ import threading
 import multiprocessing
 
 import stem
+from stem import StreamStatus
+from stem import CircStatus
 
+import const
 import util
 import log
 
 logger = log.getLogger()
 
 class EventHandler( object ):
+
+    """
+    Implement a handler for asynchronous Tor events.
+
+    The handler processes only stream and circuit events.  New streams are
+    attached to their corresponding circuits since exitmap's Tor process leaves
+    new streams unattached.
+    """
 
     def __init__( self, torCtrl, probingModule, stats ):
         """
@@ -20,7 +31,6 @@ class EventHandler( object ):
         self.torCtrl = torCtrl
         self.probingModule = probingModule
         self.finishedStreams = 0
-        self.terminate = False
 
         self.manager = multiprocessing.Manager()
         self.queue = self.manager.Queue()
@@ -28,13 +38,19 @@ class EventHandler( object ):
         threading.Thread(target=self.queueReader, args=()).start()
 
     def queueReader( self ):
+        """
+        Read (circuit ID, sockname) tuples from invoked probing modules.
+
+        These tuples are later used to attach streams to their corresponding
+        circuits.
+        """
 
         logger.info("Starting to read from IPC queue.")
 
-        while not self.terminate:
+        while True:
             circID, sockname = self.queue.get()
             if (circID == None) and (sockname == None):
-                continue
+                break
             _, port = sockname[0], int(sockname[1])
             logger.debug("Read from queue: %s, %s" % (circID, str(sockname)))
             self.attachMap[port] = circID
@@ -42,8 +58,11 @@ class EventHandler( object ):
         logger.info("Stopping to read from IPC queue.")
 
     def newCircuit( self, circEvent ):
+        """
+        Invoke a new probing module when a new circuit becomes ready.
+        """
 
-        if circEvent.status != stem.CircStatus.BUILT:
+        if circEvent.status != CircStatus.BUILT:
             return
 
         self.stats.successfulCircuits += 1
@@ -51,27 +70,34 @@ class EventHandler( object ):
         logger.info("Circuit for exit relay \"%s\" is built.  " \
                     "Now invoking probing module." % exitFpr)
 
+        # Invoke the module in a dedicated process.
         proc = multiprocessing.Process(target=self.probingModule,
                                        args=(exitFpr, self.queue,
                                              circEvent.id,))
         proc.start()
 
     def newStream( self, streamEvent ):
+        """
+        Attach a new stream to its corresponding circuit.
 
-        logger.debug("stream event: %s" % str(streamEvent))
+        The missing link between the stream and its corresponding circuit is
+        the TCP source port.  Probing modules inform exitmap about their source
+        port by writing it to the queue.
+        """
 
-        if streamEvent.status != stem.StreamStatus.NEW and \
-           streamEvent.status != stem.StreamStatus.NEWRESOLVE and \
-           streamEvent.status != stem.StreamStatus.CLOSED:
+        if streamEvent.status != StreamStatus.NEW and \
+           streamEvent.status != StreamStatus.NEWRESOLVE and \
+           streamEvent.status != StreamStatus.CLOSED:
             return
 
-        if streamEvent.status == stem.StreamStatus.CLOSED:
+        # We keep track of closed streams and, if necessary, terminate
+        # exitmap.
+        if streamEvent.status == StreamStatus.CLOSED:
             self.finishedStreams += 1
             if (self.stats.successfulCircuits == self.finishedStreams):
-                logger.info("Time to die!")
-                self.terminate = True
                 self.queue.put((None, None))
-                print self.stats
+                logger.info("Shutting down %s: %s" %
+                            (const.TOOL_NAME, self.stats))
                 exit(0)
             return
 
