@@ -11,6 +11,7 @@ class Statistics( object ):
 
         self.totalCircuits = 0
         self.failedCircuits = 0
+        self.successfulCircuits = 0
         self.modulesRun = 0
 
     def __str__( self ):

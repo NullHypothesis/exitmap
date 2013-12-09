@@ -19,14 +19,17 @@ def getSourcePort( streamLine ):
 
 class EventHandler( object ):
 
-    def __init__( self, torCtrl, probingModule ):
+    def __init__( self, torCtrl, probingModule, stats ):
         """
         Initialise an EventHandler object.
         """
 
+        self.stats = stats
         self.attachMap = {}
         self.torCtrl = torCtrl
         self.probingModule = probingModule
+        self.finishedStreams = 0
+        self.terminate = False
 
         self.manager = multiprocessing.Manager()
         self.queue = self.manager.Queue()
@@ -37,17 +40,22 @@ class EventHandler( object ):
 
         logger.info("Starting to read from IPC queue.")
 
-        while True:
+        while not self.terminate:
             circID, sockname = self.queue.get()
+            if (circID == None) and (sockname == None):
+                continue
             _, port = sockname[0], int(sockname[1])
             logger.debug("Read from queue: %s, %s" % (circID, str(sockname)))
             self.attachMap[port] = circID
+
+        logger.info("Stopping to read from IPC queue.")
 
     def newCircuit( self, circEvent ):
 
         if circEvent.status != stem.CircStatus.BUILT:
             return
 
+        self.stats.successfulCircuits += 1
         exitFpr = circEvent.path[-1][0]
         logger.info("Circuit for exit relay \"%s\" is built.  " \
                     "Now invoking probing module." % exitFpr)
@@ -59,8 +67,21 @@ class EventHandler( object ):
 
     def newStream( self, streamEvent ):
 
+        logger.debug("stream event: %s" % str(streamEvent))
+
         if streamEvent.status != stem.StreamStatus.NEW and \
-           streamEvent.status != stem.StreamStatus.NEWRESOLVE:
+           streamEvent.status != stem.StreamStatus.NEWRESOLVE and \
+           streamEvent.status != stem.StreamStatus.CLOSED:
+            return
+
+        if streamEvent.status == stem.StreamStatus.CLOSED:
+            self.finishedStreams += 1
+            if (self.stats.successfulCircuits == self.finishedStreams):
+                logger.info("Time to die!")
+                self.terminate = True
+                self.queue.put((None, None))
+                print self.stats
+                exit(0)
             return
 
         sourcePort = getSourcePort(str(streamEvent))

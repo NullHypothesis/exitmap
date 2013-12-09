@@ -17,6 +17,7 @@ import command
 import exitselector
 
 from eventhandler import EventHandler
+from stats import Statistics
 
 logger = log.getLogger()
 
@@ -63,6 +64,7 @@ def main():
     The scanner's entry point.
     """
 
+    stats = Statistics()
     args = parseCmdArgs()
     logger.debug("Command line arguments: %s" % str(args))
 
@@ -71,9 +73,9 @@ def main():
     stem.connection.authenticate_none(torCtrl)
 
     for moduleName in args.module:
-        runModule(moduleName, args, torCtrl)
+        runModule(moduleName, args, torCtrl, stats)
 
-def runModule( moduleName, args, torCtrl ):
+def runModule( moduleName, args, torCtrl, stats ):
 
     logger.info("Running module '%s'." % moduleName)
     module = __import__("modules.%s" % moduleName, fromlist=[moduleName])
@@ -89,11 +91,12 @@ def runModule( moduleName, args, torCtrl ):
                                            hosts=hosts)
 
     count = len(exitRelays)
+    stats.totalCircuits += count
     if count < 1:
         raise error.ExitSelectionError("Exit selection yielded %d exits " \
                                        "but need at least one." % count)
 
-    handler = EventHandler(torCtrl, module.probe)
+    handler = EventHandler(torCtrl, module.probe, stats)
     torCtrl.add_event_listener(handler.newEvent,
                                EventType.CIRC, EventType.STREAM)
 
@@ -103,9 +106,11 @@ def runModule( moduleName, args, torCtrl ):
         try:
             torCtrl.new_circuit([const.FIRST_HOP, exitRelay])
         except stem.ControllerError as err:
+            stats.failedCircuits += 1
             logger.warning("Circuit with exit relay \"%s\" could not be " \
                            "created: %s" % (exitRelay, err))
     logger.debug("Done triggering circuit creations.")
+    stats.modulesRun += 1
 
 if __name__ == "__main__":
 
