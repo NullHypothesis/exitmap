@@ -1,19 +1,14 @@
-Installation
-============
-
 Prerequisites
 -------------
 
 Before you can run `exitmap` you should make sure that you have the
 following software installed:
 
-* [SocksiPy][]
-* [futures][]
 * [stem][]
 
 Within Debian you can install all components by issuing:
 
-    apt-get install python-socksipy python-concurrent.futures python-stem
+    apt-get install python-stem
 
 Retrieve consensus data
 -----------------------
@@ -30,14 +25,7 @@ Run `exitmap`
 Finally, you can run `exitmap`:  
 `$ python exitmap.py -c /tmp/tordata/cached-consensus checktest`
 
-[SocksiPy]: https://pypi.python.org/pypi/SocksiPy
-
-[futures]: https://pypi.python.org/pypi/futures/2.1.5
-
 [stem]: https://stem.torproject.org/
-
-
-
 
 Feedback
 ========
