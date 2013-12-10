@@ -28,6 +28,7 @@ def probe( exitFpr ):
     if not data:
         return
 
+    # This is the string, we are looking for in the response.
     identifier = "Congratulations. This browser is configured to use Tor."
     if not (identifier in data):
         logger.error("Detected false negative for \"%s\".  " \
@@ -35,3 +36,15 @@ def probe( exitFpr ):
         logger.error(data)
     else:
         logger.info("Exit relay \"%s\" passed the check test." % exitFpr)
+
+def main():
+    """
+    Entry point when invoked over the command line.
+    """
+
+    probe("n/a")
+
+    return 0
+
+if __name__ == "__main__":
+    exit(main())
