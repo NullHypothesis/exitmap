@@ -1,10 +1,12 @@
 import threading
 import multiprocessing
+import socket
 
 import stem
 from stem import StreamStatus
 from stem import CircStatus
 
+import mysocks
 import const
 import util
 import log
@@ -42,6 +44,8 @@ class EventHandler( object ):
         self.queue = self.manager.Queue()
 
         threading.Thread(target=self.queueReader, args=()).start()
+
+        mysocks.setdefaultproxy(mysocks.PROXY_TYPE_SOCKS5, "127.0.0.1", 10000)
 
     def queueReader( self ):
         """
@@ -84,6 +88,7 @@ class EventHandler( object ):
 
         if circsDone and streamsDone:
             # Terminate the thread which handles the queue.
+            socket.socket = mysocks._orgsocket
             self.queue.put((None, None))
             logger.info("Finished scan: %s" % self.stats)
             exit(0)
@@ -107,10 +112,11 @@ class EventHandler( object ):
         logger.info("Circuit for exit relay \"%s\" is built.  " \
                     "Now invoking probing module." % exitFpr)
 
+        socket.socket = mysocks.socksocket
+        mysocks.setqueue(self.queue, circEvent.id)
         # Invoke the module in a dedicated process.
         proc = multiprocessing.Process(target=self.probingModule,
-                                       args=(exitFpr, self.queue,
-                                             circEvent.id,))
+                                       args=(exitFpr,))
         proc.start()
 
     def newStream( self, streamEvent ):

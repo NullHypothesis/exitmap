@@ -16,13 +16,9 @@ logger = log.getLogger()
 # destination(s).
 destinations = [("check.torproject.org", 443)]
 
-def probe( exitFpr, queue, circID ):
+def probe( exitFpr ):
 
     logger.info("I'm the module which is probing exit relay \"%s\"." % exitFpr)
-
-    mysocks.setdefaultproxy(mysocks.PROXY_TYPE_SOCKS5, "127.0.0.1", 10000)
-    mysocks.setqueue(queue, circID)
-    socket.socket = mysocks.socksocket
 
     data = None
     try:
