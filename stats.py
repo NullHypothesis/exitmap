@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import log
 
 logger = log.getLogger()
@@ -9,6 +11,7 @@ class Statistics( object ):
         Initialise a Statistics object.
         """
 
+        self.startTime = datetime.now()
         self.totalCircuits = 0
         self.failedCircuits = 0
         self.successfulCircuits = 0
@@ -21,6 +24,8 @@ class Statistics( object ):
 
         ret = "Determining scan statistics.\n"
         ret += "Ran %d modules.\n" % self.modulesRun
-        ret += "%d of %d circuits failed." % (self.failedCircuits,
-                                              self.totalCircuits)
+        ret += "%d of %d circuits failed.\n" % (self.failedCircuits,
+                                                self.totalCircuits)
+        ret += "Scan time: %s." % str(datetime.now() - self.startTime)
+
         return ret
