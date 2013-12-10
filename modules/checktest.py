@@ -4,8 +4,6 @@
 Module to detect false positives for https://check.torproject.org.
 """
 
-import mysocks
-import socket
 import urllib2
 
 import log
