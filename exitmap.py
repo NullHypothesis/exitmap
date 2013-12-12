@@ -103,7 +103,7 @@ def runModule( moduleName, args, torCtrl, stats ):
 
     # Start building a circuit for every exit relay we got.
     before = datetime.datetime.now()
-    logger.debug("Beginning to trigger %d circuit creations." % count)
+    logger.debug("Beginning to trigger %d circuit creation(s)." % count)
     for exitRelay in exitRelays:
         try:
             torCtrl.new_circuit([const.FIRST_HOP, exitRelay])
