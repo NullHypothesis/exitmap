@@ -4,7 +4,6 @@ TOOL_NAME = "exitmap"
 # FIXME: Add your relay's fingerprint here.
 FIRST_HOP = ""
 
-CIRCUIT_POOL_SIZE = 20
 
 # Seconds after which circuits are no longer considered to be used for streams.
 CIRCUIT_TIMEOUT = 10
