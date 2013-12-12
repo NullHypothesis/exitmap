@@ -2,22 +2,26 @@ import threading
 import subprocess
 
 import log
+import util
 
 logger = log.getLogger()
 
 class Command( object ):
 
-    def __init__( self, torsocksConf="" ):
+    def __init__( self, torsocksConf, queue, circID ):
 
         self.env = dict()
-
-        if torsocksConf:
-            self.env["TORSOCKS_CONF_FILE"] = torsocksConf
+        self.env["TORSOCKS_CONF_FILE"] = torsocksConf
+        self.env["TORSOCKS_LOG_LEVEL"] = "5"
 
         self.command = ["torsocks"]
         self.process = None
         self.stdout = None
         self.stderr = None
+        self.queue = queue
+        self.circID = circID
+        self.pattern = "Connection on fd [0-9]+ originating " \
+                       "from [^:]+:([0-9]{1,5})"
 
     def _invokeProcess( self ):
         """
@@ -44,6 +48,12 @@ class Command( object ):
                     line = self.process.stderr.readline().strip()
 
                 if line:
+                    # Look for torsocks' source port before we pass the line on
+                    # to the module.
+                    port = util.extractPattern(line, self.pattern)
+                    if port is not None:
+                        self.queue.put([self.circID, ("127.0.0.1", int(port))])
+
                     self.outputCallback(line, self.process.terminate)
                 else:
                     break
@@ -51,17 +61,15 @@ class Command( object ):
         # Wait for the process to finish.
         self.stdout, self.stderr = self.process.communicate()
 
-    def execute( self, command, timeout=5, outputCallback=None,
+    def execute( self, command, timeout=10, outputCallback=None,
                  outputWatch="None" ):
-
 
         self.command += command
         self.outputCallback = outputCallback
         self.outputWatch = outputWatch
 
-        logger.debug("Invoking '%s' in environment '%s'" %
-                     (' '.join(self.command),
-                      str(self.env)))
+        logger.debug("Invoking \"%s\" in environment \"%s\"" %
+                     (' '.join(self.command), str(self.env)))
 
         thread = threading.Thread(target=self._invokeProcess)
         thread.start()
