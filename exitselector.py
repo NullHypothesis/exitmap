@@ -45,9 +45,13 @@ def getExits( consensus, countryCode=None, badExit=False,
 
         a = b = c = False
 
+        cannotExit = False
         for (ip, port) in hosts:
             if not desc.exit_policy.can_exit_to(ip, port):
-                continue
+                cannotExit = True
+                break
+        if cannotExit:
+            continue
 
         if (badExit and ("BadExit" in desc.flags)) or (not badExit):
             a = True
