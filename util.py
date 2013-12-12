@@ -8,3 +8,16 @@ def getSourcePort( streamLine ):
         return int(match.group(1))
 
     return None
+
+def extractPattern( line, pattern ):
+    """
+    Look for the given 'pattern' in 'line'.
+
+    If it is found, the match is returned.  Otherwise, 'None' is returned.
+    """
+
+    match = re.search(pattern, line)
+    if match:
+        return match.group(1)
+
+    return None
