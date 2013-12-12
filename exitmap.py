@@ -84,6 +84,9 @@ def runModule( moduleName, args, torCtrl, stats ):
     # Obtain the list of exit relays to scan.
     if args.exit:
         exitRelays = [args.exit]
+    elif module.destinations == None:
+        exitRelays = exitselector.getExits(args.consensus,
+                                           countryCode=args.country)
     else:
         hosts = [(socket.gethostbyname(host), port) for
                  (host, port) in module.destinations]
