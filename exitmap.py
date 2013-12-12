@@ -76,23 +76,48 @@ def main():
     for moduleName in args.module:
         runModule(moduleName, args, torCtrl, stats)
 
+def selectExits( args, module ):
+    """
+    Based on the module's intended destinations, select exit relays to probe.
+
+    Exit relays are selected for probing if their exit policy allows exiting to
+    the module's intended destinations.
+    """
+
+    before = datetime.datetime.now()
+
+    # '-e' was used to specify a single exit relay.
+    if args.exit:
+        exitRelays = [args.exit]
+
+    # The probing module doesn't use TCP (and, e.g., only DNS).
+    elif module.destinations == None:
+        total, exitRelays = exitselector.getExits(args.consensus,
+                                                  countryCode=args.country)
+
+    # The probing module connects to an IP:port tuple.
+    else:
+        hosts = [(socket.gethostbyname(host), port) for
+                 (host, port) in module.destinations]
+        total, exitRelays = exitselector.getExits(args.consensus,
+                                                  countryCode=args.country,
+                                                  hosts=hosts)
+
+    logger.debug("Successfully selected exit relays after %s." %
+                 str(datetime.datetime.now() - before))
+    logger.info("%d out of all %d exit relays allow exiting to %s." %
+                (len(exitRelays), total, hosts))
+
+    assert isinstance(exitRelays, list)
+
+    return exitRelays
+
 def runModule( moduleName, args, torCtrl, stats ):
 
     logger.info("Running module '%s'." % moduleName)
     module = __import__("modules.%s" % moduleName, fromlist=[moduleName])
 
-    # Obtain the list of exit relays to scan.
-    if args.exit:
-        exitRelays = [args.exit]
-    elif module.destinations == None:
-        exitRelays = exitselector.getExits(args.consensus,
-                                           countryCode=args.country)
-    else:
-        hosts = [(socket.gethostbyname(host), port) for
-                 (host, port) in module.destinations]
-        exitRelays = exitselector.getExits(args.consensus,
-                                           countryCode=args.country,
-                                           hosts=hosts)
+    exitRelays = selectExits(args, module)
 
     count = len(exitRelays)
     stats.totalCircuits += count

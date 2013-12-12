@@ -33,6 +33,7 @@ def getExits( consensus, countryCode=None, badExit=False,
               version=None, hosts=[] ):
 
     exits = []
+    total = 0
 
     if not consensus:
         return []
@@ -42,6 +43,8 @@ def getExits( consensus, countryCode=None, badExit=False,
         # We are only interested in exit relays.
         if not "Exit" in desc.flags:
             continue
+
+        total += 1
 
         a = b = c = False
 
@@ -67,14 +70,14 @@ def getExits( consensus, countryCode=None, badExit=False,
         if a and b and c:
             exits.append(desc.fingerprint)
 
-    return exits
+    return (total, exits)
 
 def main():
 
     args = parseCmdArgs()
 
-    exits = getExits(args.consensus, args.countrycode, args.badexit,
-                     args.version)
+    _, exits = getExits(args.consensus, args.countrycode, args.badexit,
+                        args.version)
     for e in exits:
         print("https://atlas.torproject.org/#details/%s" % e)
 
