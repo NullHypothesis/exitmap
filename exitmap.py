@@ -85,28 +85,26 @@ def selectExits( args, module ):
     """
 
     before = datetime.datetime.now()
+    hosts = []
+
+    if module.destinations is not None:
+        hosts = [(socket.gethostbyname(host), port) for
+                 (host, port) in module.destinations]
 
     # '-e' was used to specify a single exit relay.
     if args.exit:
         exitRelays = [args.exit]
-
-    # The probing module doesn't use TCP (and, e.g., only DNS).
-    elif module.destinations == None:
-        total, exitRelays = exitselector.getExits(args.consensus,
-                                                  countryCode=args.country)
-
-    # The probing module connects to an IP:port tuple.
+        total = len(exitRelays)
     else:
-        hosts = [(socket.gethostbyname(host), port) for
-                 (host, port) in module.destinations]
         total, exitRelays = exitselector.getExits(args.consensus,
                                                   countryCode=args.country,
                                                   hosts=hosts)
 
     logger.debug("Successfully selected exit relays after %s." %
                  str(datetime.datetime.now() - before))
-    logger.info("%d out of all %d exit relays allow exiting to %s." %
-                (len(exitRelays), total, hosts))
+    logger.info("%d%s exits out of all %s exit relays allow exiting to %s." %
+                (len(exitRelays), " %s" % args.country if args.country else "",
+                 total, hosts))
 
     assert isinstance(exitRelays, list)
 
