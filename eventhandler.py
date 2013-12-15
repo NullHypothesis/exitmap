@@ -163,7 +163,7 @@ class EventHandler( object ):
         if self.attachers.has_key(sourcePort):
             attacher = self.attachers[sourcePort]
             attacher(streamID=streamEvent.id)
-            del self.attachers[port]
+            del self.attachers[sourcePort]
         else:
             # We maintain a dictionary of source ports which points to the
             # according attaching function.  We already know the stream ID but
