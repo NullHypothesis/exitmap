@@ -1,3 +1,4 @@
+import functools
 import threading
 import multiprocessing
 import socket
@@ -6,8 +7,8 @@ import stem
 from stem import StreamStatus
 from stem import CircStatus
 
+import command
 import mysocks
-import const
 import util
 import log
 
@@ -29,10 +30,11 @@ class EventHandler( object ):
         """
 
         self.stats = stats
-        self.attachMap = {}
+        self.attachers = {}
         self.torCtrl = torCtrl
         self.probingModule = probingModule
         self.finishedStreams = 0
+        self.origsock = socket.socket
 
         self.ourStreamEvents = [ StreamStatus.NEW, StreamStatus.NEWRESOLVE,
                                  StreamStatus.CLOSED, StreamStatus.FAILED,
@@ -51,7 +53,7 @@ class EventHandler( object ):
         """
         Read (circuit ID, sockname) tuples from invoked probing modules.
 
-        These tuples are later used to attach streams to their corresponding
+        These tuples are then used to attach streams to their corresponding
         circuits.
         """
 
@@ -65,7 +67,17 @@ class EventHandler( object ):
 
             _, port = sockname[0], int(sockname[1])
             logger.debug("Read from queue: %s, %s" % (circID, str(sockname)))
-            self.attachMap[port] = circID
+
+            # If we already have the corresponding stream ID, we can attach
+            # right now.  Otherwise, we store an attaching function for later
+            # use.
+            if self.attachers.has_key(port):
+                attacher = self.attachers[port]
+                attacher(circuitID=circID)
+                del self.attachers[port]
+            else:
+                self.attachers[port] = functools.partial(self._attachStream,
+                                                         circuitID=circID)
 
         logger.info("Stopping to read from IPC queue.")
 
@@ -112,20 +124,23 @@ class EventHandler( object ):
         logger.info("Circuit for exit relay \"%s\" is built.  " \
                     "Now invoking probing module." % exitFpr)
 
+        cmd = command.Command("/tmp/torsocks.conf", self.queue, circEvent.id,
+                               self.origsock)
         socket.socket = mysocks.socksocket
         mysocks.setqueue(self.queue, circEvent.id)
+
         # Invoke the module in a dedicated process.
         proc = multiprocessing.Process(target=self.probingModule,
-                                       args=(exitFpr,))
+                                       args=(exitFpr,cmd,))
         proc.start()
 
     def newStream( self, streamEvent ):
         """
-        Attach a new stream to its corresponding circuit.
+        Create a function which is later used to attach a stream to a circuit.
 
-        The missing link between the stream and its corresponding circuit is
-        the TCP source port.  Probing modules inform exitmap about their source
-        port by using a queue for inter-process communication.
+        The attaching cannot be done right now as we do not know the stream's
+        desired circuit ID at this point.  So we set up all we can at this
+        point and wait for the attaching to be done in queueReader().
         """
 
         if streamEvent.status not in self.ourStreamEvents:
@@ -143,20 +158,32 @@ class EventHandler( object ):
                          str(streamEvent))
             return
 
-        try:
-            circID = self.attachMap[sourcePort]
-        except KeyError:
-            logger.error("Couldn't find source port %d in lookup table." %
-                         sourcePort)
-            return
-        del self.attachMap[sourcePort]
+        logger.debug("Adding attacher for new stream %s." % streamEvent.id)
 
-        logger.info("Attaching new stream %s to circuit ID %s." %
-                    (str(streamEvent), circID))
+        if self.attachers.has_key(sourcePort):
+            attacher = self.attachers[sourcePort]
+            attacher(streamID=streamEvent.id)
+            del self.attachers[port]
+        else:
+            # We maintain a dictionary of source ports which points to the
+            # according attaching function.  We already know the stream ID but
+            # not yet the circuit ID which is the reason why we cannot attach
+            # at this point.
+            self.attachers[sourcePort] = functools.partial(self._attachStream,
+                                         streamID=streamEvent.id)
+
+    def _attachStream( self, streamID=None, circuitID=None ):
+        """
+        Attach a stream to a circuit.
+        """
+
+        logger.debug("Attaching stream %s to circuit %s." %
+                     (streamID, circuitID))
+
         try:
-            self.torCtrl.attach_stream(streamEvent.id, circID)
+            self.torCtrl.attach_stream(streamID, circuitID)
         except stem.OperationFailed as err:
-            logger.error("Couldn't attach circuit: %s" % str(err))
+            logger.error("Couldn't attach stream: %s" % str(err))
 
     def newEvent( self, event ):
         """

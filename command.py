@@ -1,3 +1,4 @@
+import socket
 import threading
 import subprocess
 
@@ -8,17 +9,18 @@ logger = log.getLogger()
 
 class Command( object ):
 
-    def __init__( self, torsocksConf, queue, circID ):
+    def __init__( self, torsocksConf, queue, circID, origsock ):
 
         self.env = dict()
         self.env["TORSOCKS_CONF_FILE"] = torsocksConf
         self.env["TORSOCKS_LOG_LEVEL"] = "5"
 
-        self.command = ["torsocks"]
+        self.command = ["/usr/local/bin/torsocks"]
         self.process = None
         self.stdout = None
         self.stderr = None
         self.queue = queue
+        self._origsocket = origsock
         self.circID = circID
         self.pattern = "Connection on fd [0-9]+ originating " \
                        "from [^:]+:([0-9]{1,5})"
@@ -34,7 +36,7 @@ class Command( object ):
 
         self.process = subprocess.Popen(self.command, env=self.env,
                                         stdout = subprocess.PIPE,
-                                        stderr = subprocess.PIPE)
+                                        stderr = stdout)
 
         if self.outputCallback:
 
@@ -52,7 +54,12 @@ class Command( object ):
                     # to the module.
                     port = util.extractPattern(line, self.pattern)
                     if port is not None:
+                        # socket.socket is probably monkey-patched.  We need,
+                        # however, the original implementation.
+                        tmpsock = socket.socket
+                        socket.socket = self._origsocket
                         self.queue.put([self.circID, ("127.0.0.1", int(port))])
+                        socket.socket = tmpsock
 
                     self.outputCallback(line, self.process.terminate)
                 else:
@@ -60,6 +67,7 @@ class Command( object ):
 
         # Wait for the process to finish.
         self.stdout, self.stderr = self.process.communicate()
+
 
     def execute( self, command, timeout=10, outputCallback=None,
                  outputWatch="None" ):
