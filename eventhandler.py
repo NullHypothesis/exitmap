@@ -8,6 +8,7 @@ from stem import StreamStatus
 from stem import CircStatus
 
 import command
+import const
 import mysocks
 import util
 import log
