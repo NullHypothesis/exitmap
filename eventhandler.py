@@ -61,8 +61,7 @@ class EventHandler( object ):
 
         while True:
             circID, sockname = self.queue.get()
-            # This is our signal to stop.
-            if (circID == None) and (sockname == None):
+            if circID == sockname == const.TERMINATE:
                 break
 
             _, port = sockname[0], int(sockname[1])
