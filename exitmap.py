@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import time
 import socket
 import pkgutil
 import argparse
@@ -137,6 +138,8 @@ def runModule( moduleName, args, torCtrl, stats ):
             stats.failedCircuits += 1
             logger.warning("Circuit with exit relay \"%s\" could not be " \
                            "created: %s" % (exitRelay, err))
+        time.sleep(const.CIRCUIT_BUILD_DELAY)
+
     logger.debug("Done triggering circuit creations after %s." %
                  str(datetime.datetime.now() - before))
     stats.modulesRun += 1
