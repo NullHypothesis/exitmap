@@ -34,9 +34,11 @@ class Command( object ):
         the process.
         """
 
+        # Start process and redirect stderr to stdout.  That makes it much more
+        # convenient for us to parse the output.
         self.process = subprocess.Popen(self.command, env=self.env,
                                         stdout = subprocess.PIPE,
-                                        stderr = stdout)
+                                        stderr = subprocess.STDOUT)
 
         if self.outputCallback:
 
@@ -44,10 +46,7 @@ class Command( object ):
             # callback.
             while True:
 
-                if self.outputWatch == "stdout":
-                    line = self.process.stdout.readline().strip()
-                else:
-                    line = self.process.stderr.readline().strip()
+                line = self.process.stdout.readline().strip()
 
                 if line:
                     # Look for torsocks' source port before we pass the line on
@@ -69,12 +68,10 @@ class Command( object ):
         self.stdout, self.stderr = self.process.communicate()
 
 
-    def execute( self, command, timeout=10, outputCallback=None,
-                 outputWatch="None" ):
+    def execute( self, command, timeout=10, outputCallback=None ):
 
         self.command += command
         self.outputCallback = outputCallback
-        self.outputWatch = outputWatch
 
         logger.debug("Invoking \"%s\" in environment \"%s\"" %
                      (' '.join(self.command), str(self.env)))
