@@ -82,7 +82,7 @@ class Command( object ):
 
         # Kill the process if it doesn't react.  With fire^Wterminate().
         if thread.isAlive():
-            logger.debug("Terminating subprocess after waiting for more " \
+            logger.error("Terminating subprocess after waiting for more " \
                          "than %d seconds." % timeout)
             try:
                 self.process.terminate()
