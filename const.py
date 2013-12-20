@@ -9,7 +9,7 @@ FIRST_HOP = ""
 CIRCUIT_TIMEOUT = 10
 
 # How many seconds in between circuit creations do we wait?
-CIRCUIT_BUILD_DELAY = 0.05
+CIRCUIT_BUILD_DELAY = 0.01
 
 # Value which signals the queue reader to terminate.
 TERMINATE = None
