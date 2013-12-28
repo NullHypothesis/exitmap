@@ -13,3 +13,12 @@ CIRCUIT_BUILD_DELAY = 0.01
 
 # Value which signals the queue reader to terminate.
 TERMINATE = None
+
+# The data directory of exitmap's Tor process.
+TOR_DATA_DIRECTORY = "/tmp/exitmap_tor_datadir/"
+
+# The SOCKS port of exitmap's Tor process.
+TOR_SOCKS_PORT = 45678
+
+# The control port of exitmap's Tor process.
+TOR_CONTROL_PORT = 45679

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import time
 import socket
 import pkgutil
@@ -22,6 +23,35 @@ from eventhandler import EventHandler
 from stats import Statistics
 
 logger = log.getLogger()
+
+def bootstrapTor():
+    """
+    Invoke a Tor process which is subsequently used by exitmap.
+    """
+
+    logger.debug("Attempting to invoke Tor process in directory \"%s\"." %
+                 const.TOR_DATA_DIRECTORY)
+
+    proc = stem.process.launch_tor_with_config(
+        config = {
+            "SOCKSPort": str(const.TOR_SOCKS_PORT),
+            "ControlPort": str(const.TOR_CONTROL_PORT),
+            "DataDirectory": const.TOR_DATA_DIRECTORY,
+            "LearnCircuitBuildTimeout": "0",
+            "CircuitBuildTimeout": "40",
+            "__DisablePredictedCircuits": "1",
+            "__LeaveStreamsUnattached": "1",
+            "FetchHidServDescriptors": "0",
+            "UseMicroDescriptors": "0",
+        },
+        timeout = 30,
+        take_ownership = True,
+        completion_percent = 80,
+    )
+
+    logger.info("Successfully started Tor process (PID=%d)." % proc.pid)
+
+    return proc
 
 def parseCmdArgs():
     """
@@ -70,8 +100,8 @@ def main():
     args = parseCmdArgs()
     logger.debug("Command line arguments: %s" % str(args))
 
-    # TODO: Start a Tor process here rather than connecting to an existing one.
-    torCtrl = Controller.from_port(port = 10001)
+    torProc = bootstrapTor()
+    torCtrl = Controller.from_port(port = const.TOR_CONTROL_PORT)
     stem.connection.authenticate_none(torCtrl)
 
     for moduleName in args.module:
@@ -88,6 +118,17 @@ def selectExits( args, module ):
     before = datetime.datetime.now()
     hosts = []
 
+    # If no consensus was given over the command line, we take the one in the
+    # data directory.
+    if args.consensus:
+        consensus = args.consensus
+    else:
+        consensus = const.TOR_DATA_DIRECTORY + "cached-consensus"
+
+    if not os.path.exists(consensus):
+        logger.error("The consensus \"%s\" does not exist." % consensus)
+        exit(1)
+
     if module.destinations is not None:
         hosts = [(socket.gethostbyname(host), port) for
                  (host, port) in module.destinations]
@@ -97,7 +138,7 @@ def selectExits( args, module ):
         exitRelays = [args.exit]
         total = len(exitRelays)
     else:
-        total, exitRelays = exitselector.getExits(args.consensus,
+        total, exitRelays = exitselector.getExits(consensus,
                                                   countryCode=args.country,
                                                   hosts=hosts)
 

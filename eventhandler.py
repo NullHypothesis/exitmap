@@ -48,7 +48,8 @@ class EventHandler( object ):
 
         threading.Thread(target=self.queueReader, args=()).start()
 
-        mysocks.setdefaultproxy(mysocks.PROXY_TYPE_SOCKS5, "127.0.0.1", 10000)
+        mysocks.setdefaultproxy(mysocks.PROXY_TYPE_SOCKS5, "127.0.0.1",
+                                const.TOR_SOCKS_PORT)
 
     def queueReader( self ):
         """
