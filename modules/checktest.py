@@ -14,7 +14,7 @@ logger = log.getLogger()
 # destination(s).
 destinations = [("check.torproject.org", 443)]
 
-def probe( exitFpr ):
+def probe( exitFpr, cmd ):
 
     logger.info("I'm the module which is probing exit relay \"%s\"." % exitFpr)
 
