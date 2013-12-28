@@ -20,8 +20,8 @@ and newer, you can install `stem` by executing:
 
     # apt-get install python-stem
 
-Running `exitmap`
------------------
+Running exitmap
+---------------
 
 You can run `exitmap` with the checktest module by executing:
 
