@@ -1,34 +1,38 @@
-Prerequisites
--------------
+Overview
+--------
 
-Before you can run `exitmap` you should make sure that you have the
-following software installed:
+`exitmap` is a fast and modular Python-based scanner for Tor exit relays.
+Modules implement tasks which can be executed over all exit relays or a subset
+of them.
 
-* [stem][]
+The tool uses [`stem`](https://stem.torproject.org) to initiate circuits over
+all given exit relays and as soon as `tor` notifies `exitmap` of an established
+circuit, a module is invoked over the newly established circuit.
 
-Within Debian you can install all components by issuing:
+Among other things, `exitmap` has been used to check for false positives on
+the Tor Project's [check](https://check.torproject.org) service.
 
-    apt-get install python-stem
+Installation
+------------
 
-Retrieve consensus data
------------------------
+`exitmap` uses the library `stem` to communicate with Tor.  On Debian jessie
+and newer, you can install `stem` by executing:
 
-First, get the current consensus by running:  
-`$ tor -f doc/torrc.fetch`
+    # apt-get install python-stem
 
-Then, start the bare Tor process which is used by `exitmap`:  
-`$ tor -f doc/torrc`
+Running `exitmap`
+-----------------
 
-Run `exitmap`
--------------
+You can run `exitmap` with the checktest module by executing:
 
-Finally, you can run `exitmap`:  
-`$ python exitmap.py -c /tmp/tordata/cached-consensus checktest`
+    $ python exitmap.py checktest
 
-[stem]: https://stem.torproject.org/
+To run the same test over German exit relays only, execute:
+
+    $ python exitmap.py -C DE checktest
 
 Feedback
-========
+--------
 
 Contact: Philipp Winter <phw@nymity.ch>  
 OpenPGP fingerprint: `B369 E7A2 18FE CEAD EB96  8C73 CF70 89E3 D7FD C0D0`
