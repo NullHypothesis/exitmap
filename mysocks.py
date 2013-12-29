@@ -168,6 +168,78 @@ class socksocket(socket.socket):
         """
         self.__proxy = (proxytype,addr,port,rdns,username,password)
 
+    def resolve(self, domain):
+        """resolve(self, domain) -> ip address
+        Resolve the given domain over Tor's SOCKS port and return the IP
+        address.
+        """
+
+        if len(domain) > 255:
+            self.close()
+            raise GeneralProxyError("Domain name \"%s\" too long (>255): %d " \
+                                    "characters." % (domain, len(domain)))
+
+        if self.__proxy[0] == PROXY_TYPE_SOCKS5:
+            if self.__proxy[2] != None:
+                portnum = self.__proxy[2]
+            else:
+                portnum = 9150
+        else:
+            self.close()
+            raise GeneralProxyError("Only SOCKS5 allowed for name " \
+                                    "resolution over Tor.")
+
+        # Connect to Tor's SOCKS port if we are not connected already.
+        _orgsocket.connect(self, (self.__proxy[1], portnum))
+
+        # 1 byte SOCKS version
+        # 1 byte number of authentication methods supported
+        # 1 byte variable-size authentication methods
+        self.sendall("\x05\x01\x00")
+
+        # 1 byte SOCKS version
+        # 1 byte chosen authentication method
+        chosenauth = self.__recvall(2)
+
+        # Server must support SOCKSv5.
+        if chosenauth[0] != "\x05":
+            self.close()
+            raise GeneralProxyError((1, _generalerrors[1]))
+
+        # Server must not send an error and pick our authentication suggestion.
+        if (chosenauth[1] != "\x00") or (chosenauth[1] == "\xff"):
+            self.close()
+            raise Socks5AuthError((2, _socks5autherrors[2]))
+
+        # 1 byte SOCKS version
+        # 1 byte command code (\xf0 is Tor's special DNS command code)
+        # 1 byte reserved, must be \x00
+        # 1 byte address type (\x03 is domain name)
+        req = "\x05\xf0\x00\x03"
+
+        # 1 byte domain length
+        # variable-size domain
+        # 2 byte port number
+        req = req + chr(len(domain)) + domain + "\x00\x00"
+
+        self.sendall(req)
+
+        # Parse the server's response which hopefully contains the domain's
+        # IPv4 address.
+        response = self.__recvall(10)
+        if response[1] != "\x00":
+            self.close()
+            raise GeneralProxyError((1, _generalerrors[1]))
+
+        # 4-byte IPv4 address.
+        if response[3] == "\x01":
+            ipv4 = response[4:8]
+        else:
+            self.close()
+            raise Socks5Error("DNS resolution failed.")
+
+        return socket.inet_ntoa(ipv4)
+
     def __negotiatesocks5(self,destaddr,destport):
         """__negotiatesocks5(self,destaddr,destport)
         Negotiates a connection through a SOCKS5 server.
