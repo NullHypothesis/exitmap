@@ -190,7 +190,7 @@ class socksocket(socket.socket):
                                     "resolution over Tor.")
 
         # Connect to Tor's SOCKS port if we are not connected already.
-        _orgsocket.connect(self, (self.__proxy[1], portnum))
+        self._connect(self, (self.__proxy[1], portnum))
 
         # 1 byte SOCKS version
         # 1 byte number of authentication methods supported
