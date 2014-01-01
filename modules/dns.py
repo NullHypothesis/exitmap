@@ -33,4 +33,4 @@ def probe( exitFpr, cmd ):
         logger.error("Exit relay %s returned unexpected IPv4 address: %s" %
                      (exitFpr, ipv4))
     else:
-        logger.info("IPv4 address as expected: %s" % ipv4)
+        logger.info("IPv4 address for %s as expected: %s" % (exitFpr, ipv4))
