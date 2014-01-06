@@ -31,6 +31,13 @@ To run the same test over German exit relays only, execute:
 
     $ python exitmap.py -C DE checktest
 
+Alternatives
+------------
+
+Don't like `exitmap`?  Then have a look at
+[`tortunnel`](http://www.thoughtcrime.org/software/tortunnel/) or
+[`SoaT`](https://gitweb.torproject.org/torflow.git/blob/HEAD:/NetworkScanners/ExitAuthority/README.ExitScanning).
+
 Feedback
 --------
 
