@@ -5,7 +5,7 @@ Overview
 Modules implement tasks which can be executed over all exit relays or a subset
 of them.
 
-The tool uses [`stem`](https://stem.torproject.org) to initiate circuits over
+The tool uses [`Stem`](https://stem.torproject.org) to initiate circuits over
 all given exit relays and as soon as `tor` notifies `exitmap` of an established
 circuit, a module is invoked over the newly established circuit.
 
@@ -15,8 +15,8 @@ the Tor Project's [check](https://check.torproject.org) service.
 Installation
 ------------
 
-`exitmap` uses the library `stem` to communicate with Tor.  On Debian jessie
-and newer, you can install `stem` by executing:
+`exitmap` uses the library `Stem` to communicate with Tor.  On Debian jessie
+and newer, you can install `Stem` by executing:
 
     # apt-get install python-stem
 
