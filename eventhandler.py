@@ -51,6 +51,52 @@ class EventHandler( object ):
         mysocks.setdefaultproxy(mysocks.PROXY_TYPE_SOCKS5, "127.0.0.1",
                                 const.TOR_SOCKS_PORT)
 
+    def prepareAttach( self, port, circuitID=None, streamID=None ):
+        """
+        Prepare for attaching a stream to a circuit.
+
+        If we already have the corresponding stream/circuit, it can be attached
+        right now.  Otherwise, the method _attachStream() is partially executed
+        and stored so it can be attached at a later point.
+        """
+
+        assert ((circuitID is not None) and (streamID is None)) or \
+               ((circuitID is None) and (streamID is not None))
+
+        # Check if we can attach right now.
+        if self.attachers.has_key(port):
+            attacher = self.attachers[port]
+            if circuitID:
+                attacher(circuitID=circuitID)
+            else:
+                attacher(streamID=streamID)
+            del self.attachers[port]
+        else:
+            # We maintain a dictionary of source ports which point to their
+            # according attaching function.  At this point we only know either
+            # stream or circuit ID, so we store a partially executed function.
+            if circuitID:
+                self.attachers[port] = functools.partial(self._attachStream,
+                                                         circuitID=circuitID)
+            else:
+                self.attachers[port] = functools.partial(self._attachStream,
+                                                         streamID=streamID)
+
+        logger.debug("Pending attachers: %d." % len(self.attachers))
+
+    def _attachStream( self, streamID=None, circuitID=None ):
+        """
+        Attach a stream to a circuit.
+        """
+
+        logger.debug("Attaching stream %s to circuit %s." %
+                     (streamID, circuitID))
+
+        try:
+            self.torCtrl.attach_stream(streamID, circuitID)
+        except stem.OperationFailed as err:
+            logger.error("Couldn't attach stream: %s" % str(err))
+
     def queueReader( self ):
         """
         Read (circuit ID, sockname) tuples from invoked probing modules.
@@ -69,16 +115,7 @@ class EventHandler( object ):
             _, port = sockname[0], int(sockname[1])
             logger.debug("Read from queue: %s, %s" % (circID, str(sockname)))
 
-            # If we already have the corresponding stream ID, we can attach
-            # right now.  Otherwise, we store an attaching function for later
-            # use.
-            if self.attachers.has_key(port):
-                attacher = self.attachers[port]
-                attacher(circuitID=circID)
-                del self.attachers[port]
-            else:
-                self.attachers[port] = functools.partial(self._attachStream,
-                                                         circuitID=circID)
+            self.prepareAttach(port, circuitID=circID)
 
         logger.info("Stopping to read from IPC queue.")
 
@@ -153,38 +190,15 @@ class EventHandler( object ):
             self.finishedStreams += 1
             return
 
-        sourcePort = util.getSourcePort(str(streamEvent))
-        if not sourcePort:
+        port = util.getSourcePort(str(streamEvent))
+        if not port:
             logger.error("Couldn't extract source port from stream event: %s" %
                          str(streamEvent))
             return
 
         logger.debug("Adding attacher for new stream %s." % streamEvent.id)
 
-        if self.attachers.has_key(sourcePort):
-            attacher = self.attachers[sourcePort]
-            attacher(streamID=streamEvent.id)
-            del self.attachers[sourcePort]
-        else:
-            # We maintain a dictionary of source ports which points to the
-            # according attaching function.  We already know the stream ID but
-            # not yet the circuit ID which is the reason why we cannot attach
-            # at this point.
-            self.attachers[sourcePort] = functools.partial(self._attachStream,
-                                         streamID=streamEvent.id)
-
-    def _attachStream( self, streamID=None, circuitID=None ):
-        """
-        Attach a stream to a circuit.
-        """
-
-        logger.debug("Attaching stream %s to circuit %s." %
-                     (streamID, circuitID))
-
-        try:
-            self.torCtrl.attach_stream(streamID, circuitID)
-        except stem.OperationFailed as err:
-            logger.error("Couldn't attach stream: %s" % str(err))
+        self.prepareAttach(port, streamID=streamEvent.id)
 
     def newEvent( self, event ):
         """
