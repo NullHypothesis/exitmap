@@ -104,6 +104,11 @@ def main():
     torCtrl = Controller.from_port(port = const.TOR_CONTROL_PORT)
     stem.connection.authenticate_none(torCtrl)
 
+    # Redirect Tor's logging to work around the following problem:
+    # https://bugs.torproject.org/9862
+    logger.debug("Redirecting Tor's logging to /dev/null.")
+    torCtrl.set_conf("Log", "err file /dev/null")
+
     for moduleName in args.module:
         runModule(moduleName, args, torCtrl, stats)
 
