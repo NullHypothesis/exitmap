@@ -109,6 +109,10 @@ def main():
     logger.debug("Redirecting Tor's logging to /dev/null.")
     torCtrl.set_conf("Log", "err file /dev/null")
 
+    # We already have the current consensus, so we don't need additional
+    # descriptors or the streams fetching them.
+    torCtrl.set_conf("FetchServerDescriptors", "0")
+
     for moduleName in args.module:
         runModule(moduleName, args, torCtrl, stats)
 
