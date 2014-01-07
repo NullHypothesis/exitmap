@@ -6,6 +6,7 @@ import socket
 import pkgutil
 import argparse
 import datetime
+import random
 
 import stem
 import stem.connection
@@ -158,6 +159,8 @@ def selectExits( args, module ):
                  total, hosts))
 
     assert isinstance(exitRelays, list)
+
+    random.shuffle(exitRelays)
 
     return exitRelays
 
