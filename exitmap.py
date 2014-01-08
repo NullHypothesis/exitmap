@@ -116,6 +116,8 @@ def main():
     for moduleName in args.module:
         runModule(moduleName, args, torCtrl, stats)
 
+    return 0
+
 def selectExits( args, module ):
     """
     Based on the module's intended destinations, select exit relays to probe.
