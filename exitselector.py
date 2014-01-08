@@ -30,10 +30,14 @@ def parseCmdArgs():
     parser.add_argument("-n", "--nickname", type=str, default=None,
                         help="Select relay with the given nickname.")
 
+    parser.add_argument("-a", "--address", type=str, default=None,
+                        help="Select relays which contain the given (part " \
+                             "of an) IPv4 address.")
+
     return parser.parse_args()
 
 def getExits( consensus, countryCode=None, badExit=False,
-              version=None, nickname=None, hosts=[] ):
+              version=None, nickname=None, address=None, hosts=[] ):
 
     exits = []
     total = 0
@@ -55,6 +59,9 @@ def getExits( consensus, countryCode=None, badExit=False,
                 cannotExit = True
                 break
         if cannotExit:
+            continue
+
+        if not ((address and address in desc.address) or (not address)):
             continue
 
         if not ((nickname and nickname in desc.nickname) or (not nickname)):
@@ -80,7 +87,7 @@ def main():
     args = parseCmdArgs()
 
     _, exits = getExits(args.consensus, args.countrycode, args.badexit,
-                        args.version, args.nickname)
+                        args.version, args.nickname, args.address)
     for e in exits:
         print("https://atlas.torproject.org/#details/%s" % e)
 
