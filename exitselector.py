@@ -27,10 +27,13 @@ def parseCmdArgs():
     parser.add_argument("-v", "--version", type=str, default=None,
                         help="Show relays with a specific version.")
 
+    parser.add_argument("-n", "--nickname", type=str, default=None,
+                        help="Select relay with the given nickname.")
+
     return parser.parse_args()
 
 def getExits( consensus, countryCode=None, badExit=False,
-              version=None, hosts=[] ):
+              version=None, nickname=None, hosts=[] ):
 
     exits = []
     total = 0
@@ -46,8 +49,6 @@ def getExits( consensus, countryCode=None, badExit=False,
 
         total += 1
 
-        a = b = c = False
-
         cannotExit = False
         for (ip, port) in hosts:
             if not desc.exit_policy.can_exit_to(ip, port):
@@ -56,19 +57,21 @@ def getExits( consensus, countryCode=None, badExit=False,
         if cannotExit:
             continue
 
-        if (badExit and ("BadExit" in desc.flags)) or (not badExit):
-            a = True
+        if not ((nickname and nickname in desc.nickname) or (not nickname)):
+            continue
 
-        if ((countryCode is not None) and \
+        if not ((badExit and ("BadExit" in desc.flags)) or (not badExit)):
+            continue
+
+        if not (((countryCode is not None) and \
             (ip2loc.resolve(desc.address) == countryCode)) or \
-           (countryCode == None):
-            b = True
+           (countryCode == None)):
+            continue
 
-        if (version and (str(desc.version) == version)) or (not version):
-            c = True
+        if not ((version and (str(desc.version) == version)) or (not version)):
+            continue
 
-        if a and b and c:
-            exits.append(desc.fingerprint)
+        exits.append(desc.fingerprint)
 
     return (total, exits)
 
@@ -77,7 +80,7 @@ def main():
     args = parseCmdArgs()
 
     _, exits = getExits(args.consensus, args.countrycode, args.badexit,
-                        args.version)
+                        args.version, args.nickname)
     for e in exits:
         print("https://atlas.torproject.org/#details/%s" % e)
 
