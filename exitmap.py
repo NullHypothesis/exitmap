@@ -17,7 +17,6 @@ from stem.control import Controller, EventType
 import log
 import error
 import const
-import command
 import exitselector
 
 from eventhandler import EventHandler
