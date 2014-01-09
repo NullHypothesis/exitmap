@@ -15,6 +15,9 @@ logger = log.getLogger()
 destinations = [("check.torproject.org", 443)]
 
 def probe( exitFpr, cmd ):
+    """
+    Probe the given exit relay and look for check.tp.o false positives.
+    """
 
     logger.info("I'm the module which is probing exit relay \"%s\"." % exitFpr)
 
