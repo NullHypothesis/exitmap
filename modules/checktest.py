@@ -45,7 +45,7 @@ def main():
     Entry point when invoked over the command line.
     """
 
-    probe("n/a")
+    probe("n/a", None)
 
     return 0
 
