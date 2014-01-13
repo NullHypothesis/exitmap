@@ -47,6 +47,7 @@ def bootstrapTor():
         timeout = 30,
         take_ownership = True,
         completion_percent = 80,
+        init_msg_handler = lambda line: logger.debug("Tor says: %s" % line),
     )
 
     logger.info("Successfully started Tor process (PID=%d)." % proc.pid)
