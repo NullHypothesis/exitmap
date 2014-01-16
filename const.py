@@ -8,8 +8,9 @@ FIRST_HOP = ""
 # Seconds after which circuits are no longer considered to be used for streams.
 CIRCUIT_TIMEOUT = 10
 
-# How many seconds in between circuit creations do we wait?
-CIRCUIT_BUILD_DELAY = 0.01
+# How many seconds in between circuit creations do we wait?  Do *not* lower
+# this value unless you know what you are doing!
+CIRCUIT_BUILD_DELAY = 2
 
 # Value which signals the queue reader to terminate.
 TERMINATE = None
