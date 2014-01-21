@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Copyright 2013, 2014 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
@@ -14,8 +16,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with exitmap.  If not, see <http://www.gnu.org/licenses/>.
-
-#!/usr/bin/env python
 
 import os
 import time
