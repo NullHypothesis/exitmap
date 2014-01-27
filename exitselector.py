@@ -32,7 +32,7 @@ def parseCmdArgs():
     parser = argparse.ArgumentParser(description="%s selects a subset of Tor "
                                      "exit relays." % sys.argv[0])
 
-    parser.add_argument("-b", "--badexit", action="store_true",
+    parser.add_argument("-b", "--badexit", action="store_true", default=None,
                         help="Select bad exit relays.")
 
     parser.add_argument("-c", "--countrycode", type=str, default=None,
