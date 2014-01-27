@@ -84,6 +84,8 @@ def getExits( consensus, countryCode=None, badExit=False,
         if not ((nickname and nickname in desc.nickname) or (not nickname)):
             continue
 
+        # This will only yield relays which have "BadExit" as well as "Exit"
+        # set.
         if not ((badExit and ("BadExit" in desc.flags)) or (not badExit)):
             continue
 
