@@ -27,9 +27,10 @@ logger = log.get_logger()
 
 class Command(object):
     def __init__(self, torsocks_conf, queue, circ_id, origsock):
-        self.env = dict()
-        self.env["TORSOCKS_CONF_FILE"] = torsocks_conf
-        self.env["TORSOCKS_LOG_LEVEL"] = "5"
+        self.env = {
+            'TORSOCKS_CONF_FILE': torsocks_conf,
+            'TORSOCKS_LOG_LEVEL': '5',
+        }
 
         self.command = ["/usr/local/bin/torsocks"]
         self.process = None
@@ -52,9 +53,13 @@ class Command(object):
 
         # Start process and redirect stderr to stdout.  That makes it much more
         # convenient for us to parse the output.
-        self.process = subprocess.Popen(self.command, env=self.env,
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.STDOUT)
+
+        self.process = subprocess.Popen(
+            self.command,
+            env=self.env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
 
         if self.output_callback:
             # Read the process' output line by line and pass it to the
@@ -63,24 +68,24 @@ class Command(object):
             while True:
                 line = self.process.stdout.readline().strip()
 
-                if line:
-                    # Look for torsocks' source port before we pass the line on
-                    # to the module.
-
-                    port = util.extract_pattern(line, self.pattern)
-
-                    if port is not None:
-                        # socket.socket is probably monkey-patched.  We need,
-                        # however, the original implementation.
-
-                        tmpsock = socket.socket
-                        socket.socket = self._origsocket
-                        self.queue.put([self.circ_id, ("127.0.0.1", int(port))])
-                        socket.socket = tmpsock
-
-                    self.output_callback(line, self.process.terminate)
-                else:
+                if not line:
                     break
+
+                # Look for torsocks' source port before we pass the line on
+                # to the module.
+
+                port = util.extract_pattern(line, self.pattern)
+
+                if port is not None:
+                    # socket.socket is probably monkey-patched.  We need,
+                    # however, the original implementation.
+
+                    tmpsock = socket.socket
+                    socket.socket = self._origsocket
+                    self.queue.put([self.circ_id, ("127.0.0.1", int(port))])
+                    socket.socket = tmpsock
+
+                self.output_callback(line, self.process.terminate)
 
         # Wait for the process to finish.
 
@@ -94,6 +99,7 @@ class Command(object):
                      (' '.join(self.command), str(self.env)))
 
         thread = threading.Thread(target=self._invoke_process)
+        thread.setDaemon(1)
         thread.start()
         thread.join(timeout)
 
