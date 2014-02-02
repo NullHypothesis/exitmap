@@ -39,11 +39,15 @@ def main():
         for path, issues in get_pyflakes_issues([EXITMAP_BASE]).items():
             for issue in issues:
                 static_check_issues.setdefault(path, []).append(issue)
+    else:
+        print "Pyflakes unavailable. Please install with 'sudo pip install pyflakes'."
 
     if is_pep8_available():
         for path, issues in get_stylistic_issues([EXITMAP_BASE]).items():
             for issue in issues:
                 static_check_issues.setdefault(path, []).append(issue)
+    else:
+        print "Pep8 unavailable. Please install with 'sudo pip install pep8'."
 
     if static_check_issues:
         print "STATIC CHECKS"
