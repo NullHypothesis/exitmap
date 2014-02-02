@@ -59,47 +59,35 @@ def parse_cmd_args():
 def get_exits(consensus, country_code=None, bad_exit=False,
               version=None, nickname=None, address=None, hosts=[]):
 
-    exits = []
-    total = 0
+    all_exits = [desc for desc in stem.descriptor.parse_file(consensus) if stem.Flag.EXIT in desc.flags]
+    exits = list(all_exits)  # exits that match our given criteria
 
-    if not consensus:
-        return []
+    if hosts:
+        def can_exit_to(desc):
+            for (ip, port) in hosts:
+                if desc.exit_policy.can_exit_to(ip, port):
+                    return True
 
-    for desc in stem.descriptor.parse_file(open(consensus)):
-        # We are only interested in exit relays.
+            return False
 
-        if not stem.Flag.EXIT in desc.flags:
-            continue
+        exits = filter(can_exit_to, exits)
 
-        total += 1
-        cannot_exit = False
+    if address:
+        exits = filter(lambda desc: address == desc.address, exits)
 
-        for (ip, port) in hosts:
-            if not desc.exit_policy.can_exit_to(ip, port):
-                cannot_exit = True
-                break
+    if nickname:
+        exits = filter(lambda desc: nickname == desc.nickname, exits)
 
-        if cannot_exit:
-            continue
+    if bad_exit:
+        exits = filter(lambda desc: stem.Flag.BADEXIT in desc.flags, exits)
 
-        if address and address != desc.address:
-            continue
+    if country_code:
+        exits = filter(lambda desc: ip2loc.resolve(desc.address) == country_code, exits)
 
-        if nickname and nickname != desc.nickname:
-            continue
+    if version:
+        exits = filter(lambda desc: str(desc.version) == version, exits)
 
-        if bad_exit and stem.Flag.BADEXIT not in desc.flags:
-            continue
-
-        if country_code and ip2loc.resolve(desc.address) != country_code:
-            continue
-
-        if version and str(desc.version) != version:
-            continue
-
-        exits.append(desc.fingerprint)
-
-    return (total, exits)
+    return (len(all_exits), [desc.fingerprint for desc in exits])
 
 
 def main():
