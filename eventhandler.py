@@ -71,7 +71,9 @@ class EventHandler(object):
         self.manager = multiprocessing.Manager()
         self.queue = self.manager.Queue()
 
-        threading.Thread(target=self.queue_reader, args=()).start()
+        queue_threaed = threading.Thread(target=self.queue_reader)
+        queue_threaed.setDaemon(1)
+        queue_threaed.start()
 
         mysocks.setdefaultproxy(mysocks.PROXY_TYPE_SOCKS5, "127.0.0.1",
                                 const.TOR_SOCKS_PORT)
@@ -227,6 +229,7 @@ class EventHandler(object):
             return
 
         port = util.get_source_port(str(stream_event))
+
         if not port:
             logger.error("Couldn't extract source port from stream event: %s" %
                          str(stream_event))
