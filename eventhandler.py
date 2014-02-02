@@ -32,8 +32,8 @@ import log
 
 logger = log.getLogger()
 
-class EventHandler( object ):
 
+class EventHandler(object):
     """
     Implement a handler for asynchronous Tor events.
 
@@ -42,7 +42,7 @@ class EventHandler( object ):
     new streams unattached.
     """
 
-    def __init__( self, torCtrl, probingModule, stats ):
+    def __init__(self, torCtrl, probingModule, stats):
         """
         Initialise an EventHandler object.
         """
@@ -54,11 +54,19 @@ class EventHandler( object ):
         self.finishedStreams = 0
         self.origsock = socket.socket
 
-        self.ourStreamEvents = [ StreamStatus.NEW, StreamStatus.NEWRESOLVE,
-                                 StreamStatus.CLOSED, StreamStatus.FAILED,
-                                 StreamStatus.DETACHED]
-        self.ourCircuitEvents = [ CircStatus.BUILT, CircStatus.FAILED,
-                                  CircStatus.CLOSED ]
+        self.ourStreamEvents = [
+          StreamStatus.NEW,
+          StreamStatus.NEWRESOLVE,
+          StreamStatus.CLOSED,
+          StreamStatus.FAILED,
+          StreamStatus.DETACHED,
+        ]
+
+        self.ourCircuitEvents = [
+          CircStatus.BUILT,
+          CircStatus.FAILED,
+          CircStatus.CLOSED,
+        ]
 
         self.manager = multiprocessing.Manager()
         self.queue = self.manager.Queue()
@@ -68,7 +76,7 @@ class EventHandler( object ):
         mysocks.setdefaultproxy(mysocks.PROXY_TYPE_SOCKS5, "127.0.0.1",
                                 const.TOR_SOCKS_PORT)
 
-    def prepareAttach( self, port, circuitID=None, streamID=None ):
+    def prepareAttach(self, port, circuitID=None, streamID=None):
         """
         Prepare for attaching a stream to a circuit.
 
@@ -81,17 +89,21 @@ class EventHandler( object ):
                ((circuitID is None) and (streamID is not None))
 
         # Check if we can attach right now.
-        if self.attachers.has_key(port):
+
+        if port in self.attachers:
             attacher = self.attachers[port]
+
             if circuitID:
                 attacher(circuitID=circuitID)
             else:
                 attacher(streamID=streamID)
+
             del self.attachers[port]
         else:
             # We maintain a dictionary of source ports which point to their
             # according attaching function.  At this point we only know either
             # stream or circuit ID, so we store a partially executed function.
+
             if circuitID:
                 self.attachers[port] = functools.partial(self._attachStream,
                                                          circuitID=circuitID)
@@ -101,7 +113,7 @@ class EventHandler( object ):
 
         logger.debug("Pending attachers: %d." % len(self.attachers))
 
-    def _attachStream( self, streamID=None, circuitID=None ):
+    def _attachStream(self, streamID=None, circuitID=None):
         """
         Attach a stream to a circuit.
         """
@@ -114,7 +126,7 @@ class EventHandler( object ):
         except stem.OperationFailed as err:
             logger.error("Couldn't attach stream: %s" % str(err))
 
-    def queueReader( self ):
+    def queueReader(self):
         """
         Read (circuit ID, sockname) tuples from invoked probing modules.
 
@@ -126,6 +138,7 @@ class EventHandler( object ):
 
         while True:
             circID, sockname = self.queue.get()
+
             if circID == sockname == const.TERMINATE:
                 break
 
@@ -136,22 +149,26 @@ class EventHandler( object ):
 
         logger.info("Stopping to read from IPC queue.")
 
-    def isFinished( self ):
+    def isFinished(self):
         """
         Check if the scan is finished and if it is, shut down exitmap.
         """
 
         # Did all circuits either build or fail?
-        circsDone = (self.stats.failedCircuits + \
+
+        circsDone = (self.stats.failedCircuits +
                      self.stats.successfulCircuits) == self.stats.totalCircuits
 
         # Was every built circuit attached to a stream?
+
         streamsDone = (self.finishedStreams >= self.stats.successfulCircuits)
 
-        logger.debug("failedCircs=%d, builtCircs=%d, totalCircs=%d, " \
-                     "finishedStreams=%d" % (self.stats.failedCircuits,
-                      self.stats.successfulCircuits, self.stats.totalCircuits,
-                      self.finishedStreams))
+        logger.debug("failedCircs=%d, builtCircs=%d, totalCircs=%d, "
+                     "finishedStreams=%d" % (
+                       self.stats.failedCircuits,
+                       self.stats.successfulCircuits,
+                       self.stats.totalCircuits,
+                       self.finishedStreams))
 
         if circsDone and streamsDone:
             # Terminate the thread which handles the queue.
@@ -160,7 +177,7 @@ class EventHandler( object ):
             logger.info("Finished scan: %s" % self.stats)
             exit(0)
 
-    def newCircuit( self, circEvent ):
+    def newCircuit(self, circEvent):
         """
         Invoke a new probing module when a new circuit becomes ready.
         """
@@ -169,14 +186,15 @@ class EventHandler( object ):
             return
 
         # Keep track of how many circuits are already finished.
-        if circEvent.status in [CircStatus.FAILED,  CircStatus.CLOSED]:
+
+        if circEvent.status in [CircStatus.FAILED, CircStatus.CLOSED]:
             logger.info("Circuit closed because: %s" % str(circEvent.reason))
             self.stats.failedCircuits += 1
             return
 
         self.stats.successfulCircuits += 1
         exitFpr = circEvent.path[-1][0]
-        logger.info("Circuit for exit relay \"%s\" is built.  " \
+        logger.info("Circuit for exit relay \"%s\" is built.  "
                     "Now invoking probing module." % exitFpr)
 
         cmd = command.Command("/tmp/torsocks.conf", self.queue, circEvent.id,
@@ -186,10 +204,10 @@ class EventHandler( object ):
 
         # Invoke the module in a dedicated process.
         proc = multiprocessing.Process(target=self.probingModule,
-                                       args=(exitFpr,cmd,))
+                                       args=(exitFpr, cmd,))
         proc.start()
 
-    def newStream( self, streamEvent ):
+    def newStream(self, streamEvent):
         """
         Create a function which is later used to attach a stream to a circuit.
 
@@ -202,6 +220,7 @@ class EventHandler( object ):
             return
 
         # Keep track of how many streams are already finished.
+
         if streamEvent.status in [StreamStatus.CLOSED, StreamStatus.FAILED,
                                   StreamStatus.DETACHED]:
             self.finishedStreams += 1
@@ -217,7 +236,7 @@ class EventHandler( object ):
 
         self.prepareAttach(port, streamID=streamEvent.id)
 
-    def newEvent( self, event ):
+    def newEvent(self, event):
         """
         Dispatches new Tor controller events to the appropriate handlers.
         """

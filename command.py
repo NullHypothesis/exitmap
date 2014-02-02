@@ -24,10 +24,9 @@ import util
 
 logger = log.getLogger()
 
-class Command( object ):
 
-    def __init__( self, torsocksConf, queue, circID, origsock ):
-
+class Command(object):
+    def __init__(self, torsocksConf, queue, circID, origsock):
         self.env = dict()
         self.env["TORSOCKS_CONF_FILE"] = torsocksConf
         self.env["TORSOCKS_LOG_LEVEL"] = "5"
@@ -42,7 +41,7 @@ class Command( object ):
         self.pattern = "Connection on fd [0-9]+ originating " \
                        "from [^:]+:([0-9]{1,5})"
 
-    def _invokeProcess( self ):
+    def _invokeProcess(self):
         """
         Invoke the process and wait for it to finish.
 
@@ -58,20 +57,22 @@ class Command( object ):
                                         stderr = subprocess.STDOUT)
 
         if self.outputCallback:
-
             # Read the process' output line by line and pass it to the
             # callback.
-            while True:
 
+            while True:
                 line = self.process.stdout.readline().strip()
 
                 if line:
                     # Look for torsocks' source port before we pass the line on
                     # to the module.
+
                     port = util.extractPattern(line, self.pattern)
+
                     if port is not None:
                         # socket.socket is probably monkey-patched.  We need,
                         # however, the original implementation.
+
                         tmpsock = socket.socket
                         socket.socket = self._origsocket
                         self.queue.put([self.circID, ("127.0.0.1", int(port))])
@@ -82,11 +83,10 @@ class Command( object ):
                     break
 
         # Wait for the process to finish.
+
         self.stdout, self.stderr = self.process.communicate()
 
-
-    def execute( self, command, timeout=10, outputCallback=None ):
-
+    def execute(self, command, timeout=10, outputCallback=None):
         self.command += command
         self.outputCallback = outputCallback
 
@@ -98,9 +98,11 @@ class Command( object ):
         thread.join(timeout)
 
         # Kill the process if it doesn't react.  With fire^Wterminate().
+
         if thread.isAlive():
-            logger.error("Terminating subprocess after waiting for more " \
+            logger.error("Terminating subprocess after waiting for more "
                          "than %d seconds." % timeout)
+
             try:
                 self.process.terminate()
             except OSError as e:
@@ -109,6 +111,7 @@ class Command( object ):
             thread.join()
 
         return (self.stdout, self.stderr)
+
 
 # Alias class name to provide more intuitive interface.
 new = Command

@@ -1,15 +1,17 @@
 import re
 
-def getSourcePort( streamLine ):
 
+def getSourcePort(streamLine):
     pattern = "SOURCE_ADDR=[0-9\.]{7,15}:([0-9]{1,5})"
     match = re.search(pattern, streamLine)
+
     if match:
         return int(match.group(1))
 
     return None
 
-def extractPattern( line, pattern ):
+
+def extractPattern(line, pattern):
     """
     Look for the given 'pattern' in 'line'.
 
@@ -17,6 +19,7 @@ def extractPattern( line, pattern ):
     """
 
     match = re.search(pattern, line)
+
     if match:
         return match.group(1)
 

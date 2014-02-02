@@ -27,7 +27,8 @@ logger = logging.getLogger(const.TOOL_NAME)
 logger.addHandler(handler)
 logger.setLevel(logging.DEBUG)
 
-def getLogger(  ):
+
+def getLogger():
     """
     Returns a logger.
     """
