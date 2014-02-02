@@ -25,12 +25,12 @@ import log
 import const
 import mysocks
 
-logger = log.getLogger()
+logger = log.get_logger()
 
 destinations = None
 
 
-def resolve(exitFpr, domain, whitelist):
+def resolve(exit_fpr, domain, whitelist):
     """
     Resolve a `domain' and compare it to the `whitelist'.
 
@@ -46,13 +46,13 @@ def resolve(exitFpr, domain, whitelist):
 
     if ipv4 not in whitelist:
         logger.error("Exit relay %s returned unexpected IPv4 address for "
-                     "\"%s\": %s." % (exitFpr, domain, ipv4))
+                     "\"%s\": %s." % (exit_fpr, domain, ipv4))
     else:
         logger.info("IPv4 address of \"%s\" as expected for %s." %
-                    (domain, exitFpr))
+                    (domain, exit_fpr))
 
 
-def probe(exitFpr, cmd):
+def probe(exit_fpr, cmd):
     """
     Probe the given exit relay and check if the domains resolve as expected.
     """
@@ -67,4 +67,4 @@ def probe(exitFpr, cmd):
     }
 
     for domain in domains.iterkeys():
-        resolve(exitFpr, domain, domains[domain])
+        resolve(exit_fpr, domain, domains[domain])

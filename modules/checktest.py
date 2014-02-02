@@ -25,7 +25,7 @@ import urllib2
 
 import log
 
-logger = log.getLogger()
+logger = log.get_logger()
 
 # exitmap needs this variable to figure out which relays can exit to the given
 # destination(s).
@@ -33,12 +33,12 @@ logger = log.getLogger()
 destinations = [("check.torproject.org", 443)]
 
 
-def probe(exitFpr, cmd):
+def probe(exit_fpr, cmd):
     """
     Probe the given exit relay and look for check.tp.o false positives.
     """
 
-    logger.info("I'm the module which is probing exit relay \"%s\"." % exitFpr)
+    logger.info("I'm the module which is probing exit relay \"%s\"." % exit_fpr)
 
     data = None
 
@@ -57,10 +57,10 @@ def probe(exitFpr, cmd):
 
     if not (identifier in data):
         logger.error("Detected false negative for \"%s\".  "
-                     "Full dump below." % exitFpr)
+                     "Full dump below." % exit_fpr)
         logger.error(data)
     else:
-        logger.info("Exit relay \"%s\" passed the check test." % exitFpr)
+        logger.info("Exit relay \"%s\" passed the check test." % exit_fpr)
 
 
 def main():

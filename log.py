@@ -28,7 +28,7 @@ logger.addHandler(handler)
 logger.setLevel(logging.DEBUG)
 
 
-def getLogger():
+def get_logger():
     """
     Returns a logger.
     """

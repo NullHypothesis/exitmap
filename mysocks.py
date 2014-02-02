@@ -61,7 +61,7 @@ PROXY_TYPE_HTTP = 3
 
 _defaultproxy = None
 _queue = None
-_circID = None
+_circ_id = None
 _orgsocket = socket.socket
 
 
@@ -162,11 +162,11 @@ def setdefaultproxy(proxytype=None, addr=None, port=None, rdns=True, username=No
     _defaultproxy = (proxytype, addr, port, rdns, username, password)
 
 
-def setqueue(queue, circID):
+def setqueue(queue, circ_id):
     global _queue
-    global _circID
+    global _circ_id
     _queue = queue
-    _circID = circID
+    _circ_id = circ_id
 
 
 class socksocket(socket.socket):
@@ -429,7 +429,7 @@ class socksocket(socket.socket):
         _orgsocket.connect(ref, address)
 
         global _queue
-        global _circID
+        global _circ_id
 
         # The multiprocessing module needs the original socket.socket.
 
@@ -438,7 +438,7 @@ class socksocket(socket.socket):
 
         # Report our source port back to exitmap.
 
-        _queue.put([_circID, _orgsocket.getsockname(ref)])
+        _queue.put([_circ_id, _orgsocket.getsockname(ref)])
         socket.socket = current
 
     def getproxysockname(self):

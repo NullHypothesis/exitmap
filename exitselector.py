@@ -25,7 +25,7 @@ import stem.descriptor
 import ip2loc
 
 
-def parseCmdArgs():
+def parse_cmd_args():
     """
     Parses and returns command line arguments.
     """
@@ -55,8 +55,8 @@ def parseCmdArgs():
     return parser.parse_args()
 
 
-def getExits(consensus, countryCode=None, badExit=False,
-             version=None, nickname=None, address=None, hosts=[]):
+def get_exits(consensus, country_code=None, bad_exit=False,
+              version=None, nickname=None, address=None, hosts=[]):
 
     exits = []
     total = 0
@@ -71,14 +71,14 @@ def getExits(consensus, countryCode=None, badExit=False,
             continue
 
         total += 1
-        cannotExit = False
+        cannot_exit = False
 
         for (ip, port) in hosts:
             if not desc.exit_policy.can_exit_to(ip, port):
-                cannotExit = True
+                cannot_exit = True
                 break
 
-        if cannotExit:
+        if cannot_exit:
             continue
 
         if not ((address and address in desc.address) or (not address)):
@@ -90,12 +90,12 @@ def getExits(consensus, countryCode=None, badExit=False,
         # This will only yield relays which have "BadExit" as well as "Exit"
         # set.
 
-        if not ((badExit and ("BadExit" in desc.flags)) or (not badExit)):
+        if not ((bad_exit and ("BadExit" in desc.flags)) or (not bad_exit)):
             continue
 
-        if not (((countryCode is not None) and
-                (ip2loc.resolve(desc.address) == countryCode)) or
-                (countryCode is None)):
+        if not (((country_code is not None) and
+                (ip2loc.resolve(desc.address) == country_code)) or
+                (country_code is None)):
             continue
 
         if not ((version and (str(desc.version) == version)) or (not version)):
@@ -107,10 +107,10 @@ def getExits(consensus, countryCode=None, badExit=False,
 
 
 def main():
-    args = parseCmdArgs()
+    args = parse_cmd_args()
 
-    _, exits = getExits(args.consensus, args.countrycode, args.badexit,
-                        args.version, args.nickname, args.address)
+    _, exits = get_exits(args.consensus, args.countrycode, args.badexit,
+                         args.version, args.nickname, args.address)
     for e in exits:
         print("https://atlas.torproject.org/#details/%s" % e)
 
