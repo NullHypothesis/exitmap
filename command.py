@@ -22,14 +22,13 @@ import subprocess
 import log
 import util
 
-logger = log.getLogger()
+logger = log.get_logger()
 
-class Command( object ):
 
-    def __init__( self, torsocksConf, queue, circID, origsock ):
-
+class Command(object):
+    def __init__(self, torsocks_conf, queue, circ_id, origsock):
         self.env = dict()
-        self.env["TORSOCKS_CONF_FILE"] = torsocksConf
+        self.env["TORSOCKS_CONF_FILE"] = torsocks_conf
         self.env["TORSOCKS_LOG_LEVEL"] = "5"
 
         self.command = ["/usr/local/bin/torsocks"]
@@ -38,11 +37,11 @@ class Command( object ):
         self.stderr = None
         self.queue = queue
         self._origsocket = origsock
-        self.circID = circID
+        self.circ_id = circ_id
         self.pattern = "Connection on fd [0-9]+ originating " \
                        "from [^:]+:([0-9]{1,5})"
 
-    def _invokeProcess( self ):
+    def _invoke_process(self):
         """
         Invoke the process and wait for it to finish.
 
@@ -54,53 +53,56 @@ class Command( object ):
         # Start process and redirect stderr to stdout.  That makes it much more
         # convenient for us to parse the output.
         self.process = subprocess.Popen(self.command, env=self.env,
-                                        stdout = subprocess.PIPE,
-                                        stderr = subprocess.STDOUT)
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT)
 
-        if self.outputCallback:
-
+        if self.output_callback:
             # Read the process' output line by line and pass it to the
             # callback.
-            while True:
 
+            while True:
                 line = self.process.stdout.readline().strip()
 
                 if line:
                     # Look for torsocks' source port before we pass the line on
                     # to the module.
-                    port = util.extractPattern(line, self.pattern)
+
+                    port = util.extract_pattern(line, self.pattern)
+
                     if port is not None:
                         # socket.socket is probably monkey-patched.  We need,
                         # however, the original implementation.
+
                         tmpsock = socket.socket
                         socket.socket = self._origsocket
-                        self.queue.put([self.circID, ("127.0.0.1", int(port))])
+                        self.queue.put([self.circ_id, ("127.0.0.1", int(port))])
                         socket.socket = tmpsock
 
-                    self.outputCallback(line, self.process.terminate)
+                    self.output_callback(line, self.process.terminate)
                 else:
                     break
 
         # Wait for the process to finish.
+
         self.stdout, self.stderr = self.process.communicate()
 
-
-    def execute( self, command, timeout=10, outputCallback=None ):
-
+    def execute(self, command, timeout=10, output_callback=None):
         self.command += command
-        self.outputCallback = outputCallback
+        self.output_callback = output_callback
 
         logger.debug("Invoking \"%s\" in environment \"%s\"" %
                      (' '.join(self.command), str(self.env)))
 
-        thread = threading.Thread(target=self._invokeProcess)
+        thread = threading.Thread(target=self._invoke_process)
         thread.start()
         thread.join(timeout)
 
         # Kill the process if it doesn't react.  With fire^Wterminate().
+
         if thread.isAlive():
-            logger.error("Terminating subprocess after waiting for more " \
+            logger.error("Terminating subprocess after waiting for more "
                          "than %d seconds." % timeout)
+
             try:
                 self.process.terminate()
             except OSError as e:
@@ -109,6 +111,7 @@ class Command( object ):
             thread.join()
 
         return (self.stdout, self.stderr)
+
 
 # Alias class name to provide more intuitive interface.
 new = Command

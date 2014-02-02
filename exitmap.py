@@ -39,9 +39,10 @@ import exitselector
 from eventhandler import EventHandler
 from stats import Statistics
 
-logger = log.getLogger()
+logger = log.get_logger()
 
-def bootstrapTor():
+
+def bootstrap_tor():
     """
     Invoke a Tor process which is subsequently used by exitmap.
     """
@@ -50,7 +51,7 @@ def bootstrapTor():
                  const.TOR_DATA_DIRECTORY)
 
     proc = stem.process.launch_tor_with_config(
-        config = {
+        config={
             "SOCKSPort": str(const.TOR_SOCKS_PORT),
             "ControlPort": str(const.TOR_CONTROL_PORT),
             "DataDirectory": const.TOR_DATA_DIRECTORY,
@@ -61,22 +62,23 @@ def bootstrapTor():
             "FetchHidServDescriptors": "0",
             "UseMicroDescriptors": "0",
         },
-        timeout = 30,
-        take_ownership = True,
-        completion_percent = 80,
-        init_msg_handler = lambda line: logger.debug("Tor says: %s" % line),
+        timeout=30,
+        take_ownership=True,
+        completion_percent=80,
+        init_msg_handler=lambda line: logger.debug("Tor says: %s" % line),
     )
 
     logger.info("Successfully started Tor process (PID=%d)." % proc.pid)
 
     return proc
 
-def parseCmdArgs():
+
+def parse_cmd_args():
     """
     Parses and returns command line arguments.
     """
 
-    parser = argparse.ArgumentParser(description="Monitors and probes Tor " \
+    parser = argparse.ArgumentParser(description="Monitors and probes Tor "
                                      "exit relays.")
 
     group = parser.add_mutually_exclusive_group()
@@ -85,7 +87,7 @@ def parseCmdArgs():
                        help="Only probe exit relays in the given country.")
 
     group.add_argument("-e", "--exit", type=str, default=None,
-                       help="Only probe the exit relay having the given " \
+                       help="Only probe the exit relay having the given "
                             "fingerprint.")
 
     parser.add_argument("-c", "--consensus", type=str, default="",
@@ -93,11 +95,12 @@ def parseCmdArgs():
 
     parser.add_argument("module", nargs='+',
                         help="Run the given module (available: %s)." %
-                        ", ".join(listModules()))
+                        ", ".join(list_modules()))
 
     return parser.parse_args()
 
-def listModules():
+
+def list_modules():
     """
     List all available modules located in "modules/".
     """
@@ -109,34 +112,38 @@ def listModules():
 
     return modules
 
+
 def main():
     """
     The scanner's entry point.
     """
 
     stats = Statistics()
-    args = parseCmdArgs()
+    args = parse_cmd_args()
     logger.debug("Command line arguments: %s" % str(args))
 
-    torProc = bootstrapTor()
-    torCtrl = Controller.from_port(port = const.TOR_CONTROL_PORT)
-    stem.connection.authenticate_none(torCtrl)
+    bootstrap_tor()
+    controller = Controller.from_port(port=const.TOR_CONTROL_PORT)
+    stem.connection.authenticate_none(controller)
 
     # Redirect Tor's logging to work around the following problem:
     # https://bugs.torproject.org/9862
+
     logger.debug("Redirecting Tor's logging to /dev/null.")
-    torCtrl.set_conf("Log", "err file /dev/null")
+    controller.set_conf("Log", "err file /dev/null")
 
     # We already have the current consensus, so we don't need additional
     # descriptors or the streams fetching them.
-    torCtrl.set_conf("FetchServerDescriptors", "0")
 
-    for moduleName in args.module:
-        runModule(moduleName, args, torCtrl, stats)
+    controller.set_conf("FetchServerDescriptors", "0")
+
+    for module_name in args.module:
+        run_module(module_name, args, controller, stats)
 
     return 0
 
-def selectExits( args, module ):
+
+def select_exits(args, module):
     """
     Based on the module's intended destinations, select exit relays to probe.
 
@@ -149,6 +156,7 @@ def selectExits( args, module ):
 
     # If no consensus was given over the command line, we take the one in the
     # data directory.
+
     if args.consensus:
         consensus = args.consensus
     else:
@@ -163,65 +171,73 @@ def selectExits( args, module ):
                  (host, port) in module.destinations]
 
     # '-e' was used to specify a single exit relay.
+
     if args.exit:
-        exitRelays = [args.exit]
-        total = len(exitRelays)
+        exit_relays = [args.exit]
+        total = len(exit_relays)
     else:
-        total, exitRelays = exitselector.getExits(consensus,
-                                                  countryCode=args.country,
-                                                  hosts=hosts)
+        total, exit_relays = exitselector.get_exits(consensus,
+                                                    country_code=args.country,
+                                                    hosts=hosts)
 
     logger.debug("Successfully selected exit relays after %s." %
                  str(datetime.datetime.now() - before))
+
     logger.info("%d%s exits out of all %s exit relays allow exiting to %s." %
-                (len(exitRelays), " %s" % args.country if args.country else "",
+                (len(exit_relays), " %s" % args.country if args.country else "",
                  total, hosts))
 
-    assert isinstance(exitRelays, list)
+    assert isinstance(exit_relays, list)
 
-    random.shuffle(exitRelays)
+    random.shuffle(exit_relays)
 
-    return exitRelays
+    return exit_relays
 
-def runModule( moduleName, args, torCtrl, stats ):
 
-    logger.info("Running module '%s'." % moduleName)
-    module = __import__("modules.%s" % moduleName, fromlist=[moduleName])
+def run_module(module_name, args, controller, stats):
+    logger.info("Running module '%s'." % module_name)
+    module = __import__("modules.%s" % module_name, fromlist=[module_name])
 
-    exitRelays = selectExits(args, module)
+    exit_relays = select_exits(args, module)
 
-    count = len(exitRelays)
-    stats.totalCircuits += count
+    count = len(exit_relays)
+    stats.total_circuits += count
+
     if count < 1:
-        raise error.ExitSelectionError("Exit selection yielded %d exits " \
+        raise error.ExitSelectionError("Exit selection yielded %d exits "
                                        "but need at least one." % count)
 
-    handler = EventHandler(torCtrl, module.probe, stats)
-    torCtrl.add_event_listener(handler.newEvent,
-                               EventType.CIRC, EventType.STREAM)
+    handler = EventHandler(controller, module.probe, stats)
+    controller.add_event_listener(handler.new_event,
+                                  EventType.CIRC, EventType.STREAM)
 
-    logger.debug("Circuit creation delay of %.3f seconds will account for " \
-                 "total delay of %.3f seconds." % (const.CIRCUIT_BUILD_DELAY,
-                 count * const.CIRCUIT_BUILD_DELAY))
+    logger.debug("Circuit creation delay of %.3f seconds will account for "
+                 "total delay of %.3f seconds." % (
+                     const.CIRCUIT_BUILD_DELAY,
+                     count * const.CIRCUIT_BUILD_DELAY))
 
     # Start building a circuit for every exit relay we got.
+
     before = datetime.datetime.now()
     logger.debug("Beginning to trigger %d circuit creation(s)." % count)
-    for exitRelay in exitRelays:
+
+    for exit_relay in exit_relays:
         try:
-            torCtrl.new_circuit([const.FIRST_HOP, exitRelay])
+            controller.new_circuit([const.FIRST_HOP, exit_relay])
         except stem.ControllerError as err:
-            stats.failedCircuits += 1
-            logger.warning("Circuit with exit relay \"%s\" could not be " \
-                           "created: %s" % (exitRelay, err))
+            stats.failed_circuits += 1
+            logger.warning("Circuit with exit relay \"%s\" could not be "
+                           "created: %s" % (exit_relay, err))
+
         time.sleep(const.CIRCUIT_BUILD_DELAY)
 
     logger.debug("Done triggering circuit creations after %s." %
                  str(datetime.datetime.now() - before))
-    stats.modulesRun += 1
+
+    stats.modules_run += 1
+
 
 if __name__ == "__main__":
-
     try:
         exit(main())
     except KeyboardInterrupt:

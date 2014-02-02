@@ -24,7 +24,8 @@ import stem.descriptor
 
 import ip2loc
 
-def parseCmdArgs():
+
+def parse_cmd_args():
     """
     Parses and returns command line arguments.
     """
@@ -48,13 +49,14 @@ def parseCmdArgs():
                         help="Select relay with the given nickname.")
 
     parser.add_argument("-a", "--address", type=str, default=None,
-                        help="Select relays which contain the given (part " \
+                        help="Select relays which contain the given (part "
                              "of an) IPv4 address.")
 
     return parser.parse_args()
 
-def getExits( consensus, countryCode=None, badExit=False,
-              version=None, nickname=None, address=None, hosts=[] ):
+
+def get_exits(consensus, country_code=None, bad_exit=False,
+              version=None, nickname=None, address=None, hosts=[]):
 
     exits = []
     total = 0
@@ -63,19 +65,20 @@ def getExits( consensus, countryCode=None, badExit=False,
         return []
 
     for desc in stem.descriptor.parse_file(open(consensus)):
-
         # We are only interested in exit relays.
+
         if not "Exit" in desc.flags:
             continue
 
         total += 1
+        cannot_exit = False
 
-        cannotExit = False
         for (ip, port) in hosts:
             if not desc.exit_policy.can_exit_to(ip, port):
-                cannotExit = True
+                cannot_exit = True
                 break
-        if cannotExit:
+
+        if cannot_exit:
             continue
 
         if not ((address and address in desc.address) or (not address)):
@@ -86,12 +89,13 @@ def getExits( consensus, countryCode=None, badExit=False,
 
         # This will only yield relays which have "BadExit" as well as "Exit"
         # set.
-        if not ((badExit and ("BadExit" in desc.flags)) or (not badExit)):
+
+        if not ((bad_exit and ("BadExit" in desc.flags)) or (not bad_exit)):
             continue
 
-        if not (((countryCode is not None) and \
-            (ip2loc.resolve(desc.address) == countryCode)) or \
-           (countryCode == None)):
+        if not (((country_code is not None) and
+                (ip2loc.resolve(desc.address) == country_code)) or
+                (country_code is None)):
             continue
 
         if not ((version and (str(desc.version) == version)) or (not version)):
@@ -101,14 +105,15 @@ def getExits( consensus, countryCode=None, badExit=False,
 
     return (total, exits)
 
+
 def main():
+    args = parse_cmd_args()
 
-    args = parseCmdArgs()
-
-    _, exits = getExits(args.consensus, args.countrycode, args.badexit,
-                        args.version, args.nickname, args.address)
+    _, exits = get_exits(args.consensus, args.countrycode, args.badexit,
+                         args.version, args.nickname, args.address)
     for e in exits:
         print("https://atlas.torproject.org/#details/%s" % e)
+
 
 if __name__ == "__main__":
     sys.exit(main())
