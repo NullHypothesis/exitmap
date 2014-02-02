@@ -20,6 +20,7 @@
 import sys
 import argparse
 
+import stem
 import stem.descriptor
 
 import ip2loc
@@ -67,7 +68,7 @@ def get_exits(consensus, country_code=None, bad_exit=False,
     for desc in stem.descriptor.parse_file(open(consensus)):
         # We are only interested in exit relays.
 
-        if not "Exit" in desc.flags:
+        if not stem.Flag.EXIT in desc.flags:
             continue
 
         total += 1
@@ -81,24 +82,19 @@ def get_exits(consensus, country_code=None, bad_exit=False,
         if cannot_exit:
             continue
 
-        if not ((address and address in desc.address) or (not address)):
+        if address and address != desc.address:
             continue
 
-        if not ((nickname and nickname in desc.nickname) or (not nickname)):
+        if nickname and nickname != desc.nickname:
             continue
 
-        # This will only yield relays which have "BadExit" as well as "Exit"
-        # set.
-
-        if not ((bad_exit and ("BadExit" in desc.flags)) or (not bad_exit)):
+        if bad_exit and stem.Flag.BADEXIT not in desc.flags:
             continue
 
-        if not (((country_code is not None) and
-                (ip2loc.resolve(desc.address) == country_code)) or
-                (country_code is None)):
+        if country_code and ip2loc.resolve(desc.address) != country_code:
             continue
 
-        if not ((version and (str(desc.version) == version)) or (not version)):
+        if version and str(desc.version) != version:
             continue
 
         exits.append(desc.fingerprint)
