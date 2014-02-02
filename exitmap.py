@@ -55,6 +55,7 @@ def bootstrap_tor():
             "SOCKSPort": str(const.TOR_SOCKS_PORT),
             "ControlPort": str(const.TOR_CONTROL_PORT),
             "DataDirectory": const.TOR_DATA_DIRECTORY,
+            "CookieAuthentication": "1",
             "LearnCircuitBuildTimeout": "0",
             "CircuitBuildTimeout": "40",
             "__DisablePredictedCircuits": "1",
@@ -124,7 +125,7 @@ def main():
 
     bootstrap_tor()
     controller = Controller.from_port(port=const.TOR_CONTROL_PORT)
-    stem.connection.authenticate_none(controller)
+    stem.connection.authenticate(controller)
 
     # Redirect Tor's logging to work around the following problem:
     # https://bugs.torproject.org/9862
