@@ -230,7 +230,7 @@ class socksocket(socket.socket):
             self.close()
 
             raise GeneralProxyError("Domain name \"%s\" too long (>255): %d "
-                                       "characters." % (domain, len(domain)))
+                                    "characters." % (domain, len(domain)))
 
         if self.__proxy[0] == PROXY_TYPE_SOCKS5:
             if self.__proxy[2] is not None:

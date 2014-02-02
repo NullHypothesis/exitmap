@@ -53,8 +53,8 @@ class Command(object):
         # Start process and redirect stderr to stdout.  That makes it much more
         # convenient for us to parse the output.
         self.process = subprocess.Popen(self.command, env=self.env,
-                                        stdout = subprocess.PIPE,
-                                        stderr = subprocess.STDOUT)
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT)
 
         if self.outputCallback:
             # Read the process' output line by line and pass it to the

@@ -131,7 +131,7 @@ def get_stylistic_issues(paths):
                 if code:
                     issues.setdefault(self.filename, []).append((offset + line_number, "%s %s" % (code, text)))
 
-        style_checker = pep8.StyleGuide(ignore = CONFIG["pep8.ignore"], reporter = StyleReport)
+        style_checker = pep8.StyleGuide(ignore=CONFIG["pep8.ignore"], reporter=StyleReport)
         style_checker.check_files(_python_files(paths))
 
         for path in _python_files(paths):

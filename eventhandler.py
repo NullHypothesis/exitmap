@@ -198,7 +198,7 @@ class EventHandler(object):
                     "Now invoking probing module." % exitFpr)
 
         cmd = command.Command("/tmp/torsocks.conf", self.queue, circEvent.id,
-                               self.origsock)
+                              self.origsock)
         socket.socket = mysocks.socksocket
         mysocks.setqueue(self.queue, circEvent.id)
 

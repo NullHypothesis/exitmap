@@ -51,7 +51,7 @@ def bootstrapTor():
                  const.TOR_DATA_DIRECTORY)
 
     proc = stem.process.launch_tor_with_config(
-        config = {
+        config={
             "SOCKSPort": str(const.TOR_SOCKS_PORT),
             "ControlPort": str(const.TOR_CONTROL_PORT),
             "DataDirectory": const.TOR_DATA_DIRECTORY,
@@ -62,10 +62,10 @@ def bootstrapTor():
             "FetchHidServDescriptors": "0",
             "UseMicroDescriptors": "0",
         },
-        timeout = 30,
-        take_ownership = True,
-        completion_percent = 80,
-        init_msg_handler = lambda line: logger.debug("Tor says: %s" % line),
+        timeout=30,
+        take_ownership=True,
+        completion_percent=80,
+        init_msg_handler=lambda line: logger.debug("Tor says: %s" % line),
     )
 
     logger.info("Successfully started Tor process (PID=%d)." % proc.pid)
@@ -123,7 +123,7 @@ def main():
     logger.debug("Command line arguments: %s" % str(args))
 
     bootstrapTor()
-    torCtrl = Controller.from_port(port = const.TOR_CONTROL_PORT)
+    torCtrl = Controller.from_port(port=const.TOR_CONTROL_PORT)
     stem.connection.authenticate_none(torCtrl)
 
     # Redirect Tor's logging to work around the following problem:
