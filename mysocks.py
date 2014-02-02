@@ -50,7 +50,6 @@ notice:
 
 This module provides a standard socket-like interface for Python
 for tunneling connections through SOCKS proxies.
-
 """
 
 import socket
@@ -115,41 +114,41 @@ class HTTPError(ProxyError):
 
 
 _generalerrors = (
-  "success",
-  "invalid data",
-  "not connected",
-  "not available",
-  "bad proxy type",
-  "bad input",
+    "success",
+    "invalid data",
+    "not connected",
+    "not available",
+    "bad proxy type",
+    "bad input",
 )
 
 _socks5errors = (
-  "succeeded",
-  "general SOCKS server failure",
-  "connection not allowed by ruleset",
-  "Network unreachable",
-  "Host unreachable",
-  "Connection refused",
-  "TTL expired",
-  "Command not supported",
-  "Address type not supported",
-  "Unknown error",
+    "succeeded",
+    "general SOCKS server failure",
+    "connection not allowed by ruleset",
+    "Network unreachable",
+    "Host unreachable",
+    "Connection refused",
+    "TTL expired",
+    "Command not supported",
+    "Address type not supported",
+    "Unknown error",
 )
 
 _socks5autherrors = (
-  "succeeded",
-  "authentication is required",
-  "all offered authentication methods were rejected",
-  "unknown username or invalid password",
-  "unknown error",
+    "succeeded",
+    "authentication is required",
+    "all offered authentication methods were rejected",
+    "unknown username or invalid password",
+    "unknown error",
 )
 
 _socks4errors = (
-  "request granted",
-  "request rejected or failed",
-  "request rejected because SOCKS server cannot connect to identd on the client",
-  "request rejected because the client program and identd report different user-ids",
-  "unknown error",
+    "request granted",
+    "request rejected or failed",
+    "request rejected because SOCKS server cannot connect to identd on the client",
+    "request rejected because the client program and identd report different user-ids",
+    "unknown error",
 )
 
 
@@ -229,8 +228,9 @@ class socksocket(socket.socket):
 
         if len(domain) > 255:
             self.close()
+
             raise GeneralProxyError("Domain name \"%s\" too long (>255): %d "
-                                    "characters." % (domain, len(domain)))
+                                       "characters." % (domain, len(domain)))
 
         if self.__proxy[0] == PROXY_TYPE_SOCKS5:
             if self.__proxy[2] is not None:
@@ -399,7 +399,9 @@ class socksocket(socket.socket):
             raise GeneralProxyError((1, _generalerrors[1]))
         elif resp[1] != "\x00":
             # Connection failed
+
             self.close()
+
             if ord(resp[1]) <= 8:
                 raise Socks5Error((ord(resp[1]), _generalerrors[ord(resp[1])]))
             else:
@@ -511,6 +513,7 @@ class socksocket(socket.socket):
 
         if resp[1] != "\x5A":
             # Server returned an error
+
             self.close()
 
             if ord(resp[1]) in (91, 92, 93):
@@ -597,6 +600,7 @@ class socksocket(socket.socket):
                 portnum = self.__proxy[2]
             else:
                 portnum = 1080
+
             self._connect(self, (self.__proxy[1], portnum))
             self.__negotiatesocks4(destpair[0], destpair[1])
         elif self.__proxy[0] == PROXY_TYPE_HTTP:

@@ -94,8 +94,8 @@ def getExits(consensus, countryCode=None, badExit=False,
             continue
 
         if not (((countryCode is not None) and
-           (ip2loc.resolve(desc.address) == countryCode)) or
-           (countryCode is None)):
+                (ip2loc.resolve(desc.address) == countryCode)) or
+                (countryCode is None)):
             continue
 
         if not ((version and (str(desc.version) == version)) or (not version)):

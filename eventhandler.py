@@ -55,17 +55,17 @@ class EventHandler(object):
         self.origsock = socket.socket
 
         self.ourStreamEvents = [
-          StreamStatus.NEW,
-          StreamStatus.NEWRESOLVE,
-          StreamStatus.CLOSED,
-          StreamStatus.FAILED,
-          StreamStatus.DETACHED,
+            StreamStatus.NEW,
+            StreamStatus.NEWRESOLVE,
+            StreamStatus.CLOSED,
+            StreamStatus.FAILED,
+            StreamStatus.DETACHED,
         ]
 
         self.ourCircuitEvents = [
-          CircStatus.BUILT,
-          CircStatus.FAILED,
-          CircStatus.CLOSED,
+            CircStatus.BUILT,
+            CircStatus.FAILED,
+            CircStatus.CLOSED,
         ]
 
         self.manager = multiprocessing.Manager()
@@ -165,10 +165,10 @@ class EventHandler(object):
 
         logger.debug("failedCircs=%d, builtCircs=%d, totalCircs=%d, "
                      "finishedStreams=%d" % (
-                       self.stats.failedCircuits,
-                       self.stats.successfulCircuits,
-                       self.stats.totalCircuits,
-                       self.finishedStreams))
+                         self.stats.failedCircuits,
+                         self.stats.successfulCircuits,
+                         self.stats.totalCircuits,
+                         self.finishedStreams))
 
         if circsDone and streamsDone:
             # Terminate the thread which handles the queue.

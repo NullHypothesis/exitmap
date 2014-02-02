@@ -213,8 +213,8 @@ def runModule(moduleName, args, torCtrl, stats):
 
     logger.debug("Circuit creation delay of %.3f seconds will account for "
                  "total delay of %.3f seconds." % (
-                   const.CIRCUIT_BUILD_DELAY,
-                   count * const.CIRCUIT_BUILD_DELAY))
+                     const.CIRCUIT_BUILD_DELAY,
+                     count * const.CIRCUIT_BUILD_DELAY))
 
     # Start building a circuit for every exit relay we got.
 

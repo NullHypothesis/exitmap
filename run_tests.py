@@ -12,8 +12,8 @@ import stem.util.conf
 import stem.util.system
 
 CONFIG = stem.util.conf.config_dict("test", {
-  "pep8.ignore": [],
-  "pyflakes.ignore": [],
+    "pep8.ignore": [],
+    "pyflakes.ignore": [],
 })
 
 EXITMAP_BASE = os.path.dirname(__file__)
