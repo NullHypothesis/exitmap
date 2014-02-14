@@ -33,7 +33,7 @@ from stem.control import Controller, EventType
 
 import log
 import error
-import const
+import config
 import exitselector
 
 from eventhandler import EventHandler
@@ -48,13 +48,13 @@ def bootstrap_tor():
     """
 
     logger.debug("Attempting to invoke Tor process in directory \"%s\"." %
-                 const.TOR_DATA_DIRECTORY)
+                 config.TOR_DATA_DIRECTORY)
 
     proc = stem.process.launch_tor_with_config(
         config={
-            "SOCKSPort": str(const.TOR_SOCKS_PORT),
-            "ControlPort": str(const.TOR_CONTROL_PORT),
-            "DataDirectory": const.TOR_DATA_DIRECTORY,
+            "SOCKSPort": str(config.TOR_SOCKS_PORT),
+            "ControlPort": str(config.TOR_CONTROL_PORT),
+            "DataDirectory": config.TOR_DATA_DIRECTORY,
             "CookieAuthentication": "1",
             "LearnCircuitBuildTimeout": "0",
             "CircuitBuildTimeout": "40",
@@ -123,8 +123,11 @@ def main():
     args = parse_cmd_args()
     logger.debug("Command line arguments: %s" % str(args))
 
+    if not config.FIRST_HOPS:
+        raise error.CircuitCreationError("Need at least one hop.")
+
     bootstrap_tor()
-    controller = Controller.from_port(port=const.TOR_CONTROL_PORT)
+    controller = Controller.from_port(port=config.TOR_CONTROL_PORT)
     stem.connection.authenticate(controller)
 
     # Redirect Tor's logging to work around the following problem:
@@ -161,7 +164,7 @@ def select_exits(args, module):
     if args.consensus:
         consensus = args.consensus
     else:
-        consensus = const.TOR_DATA_DIRECTORY + "cached-consensus"
+        consensus = config.TOR_DATA_DIRECTORY + "cached-consensus"
 
     if not os.path.exists(consensus):
         logger.error("The consensus \"%s\" does not exist." % consensus)
@@ -214,8 +217,8 @@ def run_module(module_name, args, controller, stats):
 
     logger.debug("Circuit creation delay of %.3f seconds will account for "
                  "total delay of %.3f seconds." % (
-                     const.CIRCUIT_BUILD_DELAY,
-                     count * const.CIRCUIT_BUILD_DELAY))
+                     config.CIRCUIT_BUILD_DELAY,
+                     count * config.CIRCUIT_BUILD_DELAY))
 
     # Start building a circuit for every exit relay we got.
 
@@ -224,13 +227,13 @@ def run_module(module_name, args, controller, stats):
 
     for exit_relay in exit_relays:
         try:
-            controller.new_circuit([const.FIRST_HOP, exit_relay])
+            controller.new_circuit(config.FIRST_HOPS + [exit_relay])
         except stem.ControllerError as err:
             stats.failed_circuits += 1
             logger.warning("Circuit with exit relay \"%s\" could not be "
                            "created: %s" % (exit_relay, err))
 
-        time.sleep(const.CIRCUIT_BUILD_DELAY)
+        time.sleep(config.CIRCUIT_BUILD_DELAY)
 
     logger.debug("Done triggering circuit creations after %s." %
                  str(datetime.datetime.now() - before))

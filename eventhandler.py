@@ -25,7 +25,7 @@ from stem import StreamStatus
 from stem import CircStatus
 
 import command
-import const
+import config
 import mysocks
 import util
 import log
@@ -76,7 +76,7 @@ class EventHandler(object):
         queue_threaed.start()
 
         mysocks.setdefaultproxy(mysocks.PROXY_TYPE_SOCKS5, "127.0.0.1",
-                                const.TOR_SOCKS_PORT)
+                                config.TOR_SOCKS_PORT)
 
     def prepare_attach(self, port, circuit_id=None, stream_id=None):
         """
@@ -141,7 +141,7 @@ class EventHandler(object):
         while True:
             circ_id, sockname = self.queue.get()
 
-            if circ_id == sockname == const.TERMINATE:
+            if circ_id == sockname == config.TERMINATE:
                 break
 
             _, port = sockname[0], int(sockname[1])

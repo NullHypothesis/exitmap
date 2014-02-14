@@ -17,13 +17,13 @@
 
 import logging
 
-import const
+import config
 
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter(fmt="%(asctime)s [%(levelname)s]: "
                                            "%(message)s"))
 
-logger = logging.getLogger(const.TOOL_NAME)
+logger = logging.getLogger(config.TOOL_NAME)
 logger.addHandler(handler)
 logger.setLevel(logging.DEBUG)
 
