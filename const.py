@@ -17,10 +17,9 @@
 
 TOOL_NAME = "exitmap"
 
-# Entry guard/middle relay used as only hop before the respective exit relay.
-# FIXME: Add your relay's fingerprint here.
-FIRST_HOP = ""
-
+# Relay fingerprints which are used as hops before the respective exit relay.
+# This can be only one relay -- which should be yours.
+FIRST_HOPS = [""]
 
 # Seconds after which circuits are no longer considered to be used for streams.
 CIRCUIT_TIMEOUT = 10
