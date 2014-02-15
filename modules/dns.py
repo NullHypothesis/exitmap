@@ -22,7 +22,6 @@ Module to detect malfunctioning DNS resolution.
 """
 
 import log
-import const
 import mysocks
 
 logger = log.get_logger()
@@ -38,7 +37,7 @@ def resolve(exit_fpr, domain, whitelist):
     """
 
     sock = mysocks.socksocket()
-    sock.setproxy(mysocks.PROXY_TYPE_SOCKS5, "127.0.0.1", const.TOR_SOCKS_PORT)
+    sock.setproxy(mysocks.PROXY_TYPE_SOCKS5, "127.0.0.1", "45678")
 
     # Resolve the domain using Tor's SOCKS extension.
 
