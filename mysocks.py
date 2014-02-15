@@ -293,7 +293,7 @@ class socksocket(socket.socket):
         if response[1] != "\x00":
             self.close()
 
-            raise GeneralProxyError((1, _generalerrors[1]))
+            raise GeneralProxyError((1, _socks5errors[ord(response[1])]))
 
         # 4-byte IPv4 address.
 
