@@ -121,22 +121,17 @@ def parse_cmd_args():
 
     parser.add_argument("module", nargs='+',
                         help="Run the given module (available: %s)." %
-                        ", ".join(list_modules()))
+                        ", ".join(get_modules()))
 
     return parser.parse_args()
 
 
-def list_modules():
+def get_modules():
     """
-    List all available modules located in "modules/".
+    Return all modules located in "modules/".
     """
 
-    modules = []
-
-    for _, name, _ in pkgutil.iter_modules(["modules"]):
-        modules.append(name)
-
-    return modules
+    return [name for _, name, _ in pkgutil.iter_modules(["modules"])]
 
 
 def main():
