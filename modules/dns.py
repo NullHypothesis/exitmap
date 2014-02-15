@@ -45,8 +45,8 @@ def resolve(exit_fpr, domain, whitelist):
     ipv4 = sock.resolve(domain)
 
     if ipv4 not in whitelist:
-        logger.error("Exit relay %s returned unexpected IPv4 address for "
-                     "\"%s\": %s." % (exit_fpr, domain, ipv4))
+        logger.critical("Exit relay %s returned unexpected IPv4 address for "
+                        "\"%s\": %s." % (exit_fpr, domain, ipv4))
     else:
         logger.info("IPv4 address of \"%s\" as expected for %s." %
                     (domain, exit_fpr))
