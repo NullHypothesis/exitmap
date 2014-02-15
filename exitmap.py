@@ -18,12 +18,15 @@
 # along with exitmap.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import sys
 import time
 import socket
+import string
 import pkgutil
 import argparse
 import datetime
 import random
+import logging
 
 import stem
 import stem.connection
@@ -42,19 +45,19 @@ from stats import Statistics
 logger = log.get_logger()
 
 
-def bootstrap_tor():
+def bootstrap_tor(temp_dir):
     """
     Invoke a Tor process which is subsequently used by exitmap.
     """
 
     logger.debug("Attempting to invoke Tor process in directory \"%s\"." %
-                 config.TOR_DATA_DIRECTORY)
+                 temp_dir)
 
     proc = stem.process.launch_tor_with_config(
         config={
-            "SOCKSPort": str(config.TOR_SOCKS_PORT),
-            "ControlPort": str(config.TOR_CONTROL_PORT),
-            "DataDirectory": config.TOR_DATA_DIRECTORY,
+            "SOCKSPort": "45678",
+            "ControlPort": "45679",
+            "DataDirectory": temp_dir,
             "CookieAuthentication": "1",
             "LearnCircuitBuildTimeout": "0",
             "CircuitBuildTimeout": "40",
@@ -76,23 +79,45 @@ def bootstrap_tor():
 
 def parse_cmd_args():
     """
-    Parses and returns command line arguments.
+    Parse and return command line arguments.
     """
 
-    parser = argparse.ArgumentParser(description="Monitors and probes Tor "
-                                     "exit relays.")
+    parser = argparse.ArgumentParser(description="Perform a task over (a "
+                                                 "subset of) all Tor exit "
+                                                 "relays.")
 
     group = parser.add_mutually_exclusive_group()
 
     group.add_argument("-C", "--country", type=str, default=None,
-                       help="Only probe exit relays in the given country.")
+                       help="Only probe exit relays of the country which is "
+                            "determined by the given 2-letter country code.")
 
     group.add_argument("-e", "--exit", type=str, default=None,
-                       help="Only probe the exit relay having the given "
-                            "fingerprint.")
+                       help="Only probe the exit relay which has the given "
+                            "20-byte fingerprint.")
 
     parser.add_argument("-c", "--consensus", type=str, default="",
                         help="Path to a Tor network consensus.")
+
+    parser.add_argument("-d", "--build-delay", type=float, default=3,
+                        help="Wait for the given delay (in seconds) between "
+                             "circuit builds.  The default is 3.")
+
+    parser.add_argument("-t", "--temp-dir", type=str,
+                        default="/tmp/exitmap_tor_datadir",
+                        help="Directory for temporary data.  If set, the "
+                             "network consensus can be re-used in between "
+                             "scans.")
+
+    parser.add_argument("-v", "--verbosity", type=str, default="info",
+                        help="Minimum verbosity level for logging.  Available "
+                             "in ascending order: debug, info, warning, "
+                             "error, critical).  The default is info.")
+
+    parser.add_argument("first_hop", type=str, default="",
+                        help="The 20-byte fingerprint of the Tor relay which "
+                             "is used as first hop.  This relay should be "
+                             "under your control.")
 
     parser.add_argument("module", nargs='+',
                         help="Run the given module (available: %s)." %
@@ -121,13 +146,13 @@ def main():
 
     stats = Statistics()
     args = parse_cmd_args()
+
+    logger.setLevel(logging.__dict__[string.upper(args.verbosity)])
+
     logger.debug("Command line arguments: %s" % str(args))
 
-    if not config.FIRST_HOPS:
-        raise error.CircuitCreationError("Need at least one hop.")
-
-    bootstrap_tor()
-    controller = Controller.from_port(port=config.TOR_CONTROL_PORT)
+    bootstrap_tor(args.temp_dir)
+    controller = Controller.from_port(port=config.tor_control_port)
     stem.connection.authenticate(controller)
 
     # Redirect Tor's logging to work around the following problem:
@@ -164,7 +189,7 @@ def select_exits(args, module):
     if args.consensus:
         consensus = args.consensus
     else:
-        consensus = config.TOR_DATA_DIRECTORY + "cached-consensus"
+        consensus = args.temp_dir + "/cached-consensus"
 
     if not os.path.exists(consensus):
         logger.error("The consensus \"%s\" does not exist." % consensus)
@@ -217,8 +242,8 @@ def run_module(module_name, args, controller, stats):
 
     logger.debug("Circuit creation delay of %.3f seconds will account for "
                  "total delay of %.3f seconds." % (
-                     config.CIRCUIT_BUILD_DELAY,
-                     count * config.CIRCUIT_BUILD_DELAY))
+                     args.build_delay,
+                     count * args.build_delay))
 
     # Start building a circuit for every exit relay we got.
 
@@ -227,13 +252,13 @@ def run_module(module_name, args, controller, stats):
 
     for exit_relay in exit_relays:
         try:
-            controller.new_circuit(config.FIRST_HOPS + [exit_relay])
+            controller.new_circuit([args.first_hop] + [exit_relay])
         except stem.ControllerError as err:
             stats.failed_circuits += 1
             logger.warning("Circuit with exit relay \"%s\" could not be "
                            "created: %s" % (exit_relay, err))
 
-        time.sleep(config.CIRCUIT_BUILD_DELAY)
+        time.sleep(args.build_delay)
 
     logger.debug("Done triggering circuit creations after %s." %
                  str(datetime.datetime.now() - before))
