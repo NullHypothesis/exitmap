@@ -75,8 +75,7 @@ class EventHandler(object):
         queue_threaed.setDaemon(1)
         queue_threaed.start()
 
-        mysocks.setdefaultproxy(mysocks.PROXY_TYPE_SOCKS5, "127.0.0.1",
-                                "45678")
+        mysocks.setdefaultproxy(mysocks.PROXY_TYPE_SOCKS5, "127.0.0.1", 45678)
 
     def prepare_attach(self, port, circuit_id=None, stream_id=None):
         """
