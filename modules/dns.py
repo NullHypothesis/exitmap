@@ -42,7 +42,12 @@ def resolve(exit_fpr, domain, whitelist):
 
     # Resolve the domain using Tor's SOCKS extension.
 
-    ipv4 = sock.resolve(domain)
+    try:
+        ipv4 = sock.resolve(domain)
+    except mysocks.GeneralProxyError as err:
+        logger.info("Exit relay %s could not resolve IPv4 address for "
+                    "\"%s\" because: %s" % (exit_fpr, domain, err))
+        return
 
     if ipv4 not in whitelist:
         logger.critical("Exit relay %s returned unexpected IPv4 address for "
