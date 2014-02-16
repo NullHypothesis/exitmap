@@ -194,6 +194,7 @@ class EventHandler(object):
             return
 
         self.stats.successful_circuits += 1
+        self.stats.print_progress()
         exit_fpr = circ_event.path[-1][0]
         logger.info("Circuit for exit relay \"%s\" is built.  "
                     "Now invoking probing module." % exit_fpr)
