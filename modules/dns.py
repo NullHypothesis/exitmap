@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright 2013, 2014 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
@@ -48,9 +46,12 @@ def resolve(exit_fpr, domain, whitelist):
                      "\"%s\" because: %s" % (exit_fpr, domain, err))
         return
 
+    url_prefix = "https://globe.torproject.org/#/relay/"
+
     if ipv4 not in whitelist:
-        logger.critical("Exit relay %s returned unexpected IPv4 address for "
-                        "\"%s\": %s." % (exit_fpr, domain, ipv4))
+        logger.critical("Exit relay <%s> returned unexpected IPv4 address %s "
+                        "for domain %s" %
+                        (url_prefix + exit_fpr, ipv4, domain))
     else:
         logger.debug("IPv4 address of domain %s as expected for <%s>." %
                      (domain, url_prefix + exit_fpr))
