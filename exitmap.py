@@ -187,7 +187,7 @@ def select_exits(args, module):
         consensus = args.temp_dir + "/cached-consensus"
 
     if not os.path.exists(consensus):
-        logger.error("The consensus \"%s\" does not exist." % consensus)
+        logger.critical("The consensus \"%s\" does not exist." % consensus)
         exit(1)
 
     if module.destinations is not None:

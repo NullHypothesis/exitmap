@@ -125,7 +125,7 @@ class EventHandler(object):
         try:
             self.controller.attach_stream(stream_id, circuit_id)
         except stem.OperationFailed as err:
-            logger.error("Couldn't attach stream: %s" % str(err))
+            logger.warning("Couldn't attach stream because: %s" % str(err))
 
     def queue_reader(self):
         """
@@ -189,15 +189,15 @@ class EventHandler(object):
         # Keep track of how many circuits are already finished.
 
         if circ_event.status in [CircStatus.FAILED, CircStatus.CLOSED]:
-            logger.info("Circuit closed because: %s" % str(circ_event.reason))
+            logger.debug("Circuit closed because: %s" % str(circ_event.reason))
             self.stats.failed_circuits += 1
             return
 
         self.stats.successful_circuits += 1
         self.stats.print_progress()
         exit_fpr = circ_event.path[-1][0]
-        logger.info("Circuit for exit relay \"%s\" is built.  "
-                    "Now invoking probing module." % exit_fpr)
+        logger.debug("Circuit for exit relay \"%s\" is built.  "
+                     "Now invoking probing module." % exit_fpr)
 
         cmd = command.Command("/tmp/torsocks.conf", self.queue, circ_event.id,
                               self.origsock)
@@ -231,8 +231,8 @@ class EventHandler(object):
         port = util.get_source_port(str(stream_event))
 
         if not port:
-            logger.error("Couldn't extract source port from stream event: %s" %
-                         str(stream_event))
+            logger.warning("Couldn't extract source port from stream " \
+                           "event: %s" % str(stream_event))
             return
 
         logger.debug("Adding attacher for new stream %s." % stream_event.id)

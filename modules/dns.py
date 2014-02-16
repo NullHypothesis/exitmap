@@ -44,16 +44,16 @@ def resolve(exit_fpr, domain, whitelist):
     try:
         ipv4 = sock.resolve(domain)
     except mysocks.GeneralProxyError as err:
-        logger.info("Exit relay %s could not resolve IPv4 address for "
-                    "\"%s\" because: %s" % (exit_fpr, domain, err))
+        logger.debug("Exit relay %s could not resolve IPv4 address for "
+                     "\"%s\" because: %s" % (exit_fpr, domain, err))
         return
 
     if ipv4 not in whitelist:
         logger.critical("Exit relay %s returned unexpected IPv4 address for "
                         "\"%s\": %s." % (exit_fpr, domain, ipv4))
     else:
-        logger.info("IPv4 address of \"%s\" as expected for %s." %
-                    (domain, exit_fpr))
+        logger.debug("IPv4 address of domain %s as expected for <%s>." %
+                     (domain, url_prefix + exit_fpr))
 
 
 def probe(exit_fpr, cmd):
