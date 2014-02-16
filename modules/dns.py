@@ -37,7 +37,7 @@ def resolve(exit_fpr, domain, whitelist):
     """
 
     sock = mysocks.socksocket()
-    sock.setproxy(mysocks.PROXY_TYPE_SOCKS5, "127.0.0.1", "45678")
+    sock.setproxy(mysocks.PROXY_TYPE_SOCKS5, "127.0.0.1", 45678)
 
     # Resolve the domain using Tor's SOCKS extension.
 
