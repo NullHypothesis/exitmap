@@ -46,8 +46,8 @@ def probe(exit_fpr, cmd):
     try:
         data = urllib2.urlopen("https://check.torproject.org",
                                timeout=10).read()
-    except urllib2.URLError as err:
-        logger.error("urllib2.urlopen says: %s" % err)
+    except Exception as err:
+        logger.debug("urllib2.urlopen says: %s" % err)
 
     if not data:
         return
