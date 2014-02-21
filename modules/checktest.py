@@ -38,7 +38,8 @@ def probe(exit_fpr, cmd):
     Probe the given exit relay and look for check.tp.o false positives.
     """
 
-    logger.info("I'm the module which is probing exit relay \"%s\"." % exit_fpr)
+    logger.debug("Now probing exit relay "
+                 "<https://globe.torproject.org/#/relay/%s>." % exit_fpr)
 
     data = None
 
@@ -56,12 +57,11 @@ def probe(exit_fpr, cmd):
     identifier = "Congratulations. This browser is configured to use Tor."
 
     if not (identifier in data):
-        logger.error("Detected false negative for \"%s\".  "
-                     "Full dump below." % exit_fpr)
-        logger.error(data)
+        logger.error("Detected false negative for "
+                     "<https://globe.torproject.org/#/relay/%s>." % exit_fpr)
     else:
-        logger.info("Exit relay \"%s\" passed the check test." % exit_fpr)
-
+        logger.debug("Exit relay <https://globe.torproject.org/#/relay/%s> "
+                     "passed the check test." % exit_fpr)
 
 def main():
     """
