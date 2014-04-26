@@ -146,7 +146,7 @@ def main():
     logger.debug("Command line arguments: %s" % str(args))
 
     bootstrap_tor(args.temp_dir)
-    controller = Controller.from_port(port=config.tor_control_port)
+    controller = Controller.from_port(port=45679)
     stem.connection.authenticate(controller)
 
     # Redirect Tor's logging to work around the following problem:
