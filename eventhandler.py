@@ -25,7 +25,6 @@ from stem import StreamStatus
 from stem import CircStatus
 
 import command
-import config
 import mysocks
 import util
 import log
