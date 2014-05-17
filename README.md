@@ -4,15 +4,16 @@ Overview
 --------
 
 `exitmap` is a fast and modular Python-based scanner for Tor exit relays.
-Modules implement tasks which can be executed over all exit relays or a subset
-of them.
+Modules implement tasks which can be executed over (a subset of) all exit
+relays.
 
 The tool uses [`Stem`](https://stem.torproject.org) to initiate circuits over
 all given exit relays and as soon as `tor` notifies `exitmap` of an established
-circuit, a module is invoked over the newly established circuit.
+circuit, a module is invoked for the newly established circuit.
 
-Among other things, `exitmap` has been used to check for false positives on
-the Tor Project's [check](https://check.torproject.org) service.
+`exitmap` has been used to check for false positives on the Tor Project's
+[check](https://check.torproject.org) service and to find [malicious exit
+relays](http://www.cs.kau.se/philwint/spoiled_onions).
 
 Installation
 ------------
@@ -27,11 +28,16 @@ Running exitmap
 
 You can run `exitmap` with the checktest module by executing:
 
-    $ python exitmap.py checktest
+    $ python exitmap.py CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912 checktest
 
 To run the same test over German exit relays only, execute:
 
-    $ python exitmap.py -C DE checktest
+    $ python exitmap.py -C DE CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912 checktest
+
+Note that
+[`CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912`](https://atlas.torproject.org/#details/CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912)
+is a relay run by Karlstad University.  While you can feel free to use it,
+please use your own relays in order to distribute the scanning load.
 
 Alternatives
 ------------
