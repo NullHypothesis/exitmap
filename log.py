@@ -17,8 +17,6 @@
 
 import logging
 
-import config
-
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter(fmt="%(asctime)s [%(levelname)s]: "
                                            "%(message)s"))
