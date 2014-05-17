@@ -67,7 +67,7 @@ def bootstrap_tor(temp_dir):
             "FetchHidServDescriptors": "0",
             "UseMicroDescriptors": "0",
         },
-        timeout=30,
+        timeout=90,
         take_ownership=True,
         completion_percent=80,
         init_msg_handler=lambda line: logger.info("Tor says: %s" % line),
