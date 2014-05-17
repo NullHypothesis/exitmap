@@ -36,6 +36,7 @@ from stem.control import Controller, EventType
 
 import log
 import error
+import util
 import config
 import exitselector
 
@@ -161,6 +162,12 @@ def main():
 
     controller.set_conf("FetchServerDescriptors", "0")
 
+    if not util.relay_in_consensus(args.first_hop,
+                                   util.get_consensus_path(args)):
+        logger.error("Given first hop \"%s\" not found in consensus.  Is it " \
+                     "offline?" % args.first_hop)
+        return 1
+
     for module_name in args.module:
         run_module(module_name, args, controller, stats)
 
@@ -178,13 +185,7 @@ def select_exits(args, module):
     before = datetime.datetime.now()
     hosts = []
 
-    # If no consensus was given over the command line, we take the one in the
-    # data directory.
-
-    if args.consensus:
-        consensus = args.consensus
-    else:
-        consensus = args.temp_dir + "/cached-consensus"
+    consensus = util.get_consensus_path(args)
 
     if not os.path.exists(consensus):
         logger.critical("The consensus \"%s\" does not exist." % consensus)
