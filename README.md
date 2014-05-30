@@ -44,7 +44,9 @@ Alternatives
 
 Don't like `exitmap`?  Then have a look at
 [`tortunnel`](http://www.thoughtcrime.org/software/tortunnel/),
-[`SoaT`](https://gitweb.torproject.org/torflow.git/blob/HEAD:/NetworkScanners/ExitAuthority/README.ExitScanning), or [`torscanner`](https://code.google.com/p/torscanner/).
+[`SoaT`](https://gitweb.torproject.org/torflow.git/blob/HEAD:/NetworkScanners/ExitAuthority/README.ExitScanning),
+[`torscanner`](https://code.google.com/p/torscanner/), or
+[`DetecTor`](http://detector.io/DetecTor.html).
 
 Feedback
 --------
