@@ -28,4 +28,7 @@ sys.path.insert(0, src_path)
 
 from exitmap import main
 
-main()
+try:
+    exit(main())
+except KeyboardInterrupt:
+    exit(1)

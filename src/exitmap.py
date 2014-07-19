@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright 2013, 2014 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
@@ -259,10 +257,3 @@ def run_module(module_name, args, controller, stats):
                  str(datetime.datetime.now() - before))
 
     stats.modules_run += 1
-
-
-if __name__ == "__main__":
-    try:
-        exit(main())
-    except KeyboardInterrupt:
-        logger.info("Caught keyboard interrupt.")
