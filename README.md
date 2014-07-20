@@ -3,17 +3,20 @@
 Overview
 --------
 
-`exitmap` is a fast and modular Python-based scanner for Tor exit relays.
-Modules implement tasks which can be executed over (a subset of) all exit
-relays.
+`exitmap` is a fast and extensible Python-based scanner for
+[Tor](https://www.torproject.org)  exit relays.  Modules implement tasks which
+are then run over (a subset of) all exit relays.  In practice, `exitmap` is
+useful to monitor the reliability and trustworthiness of exit relays.
 
-The tool uses [`Stem`](https://stem.torproject.org) to initiate circuits over
+`exitmap` uses [`Stem`](https://stem.torproject.org) to initiate circuits over
 all given exit relays and as soon as `tor` notifies `exitmap` of an established
 circuit, a module is invoked for the newly established circuit.
 
 `exitmap` has been used to check for false positives on the Tor Project's
 [check](https://check.torproject.org) service and to find [malicious exit
-relays](http://www.cs.kau.se/philwint/spoiled_onions).
+relays](http://www.cs.kau.se/philwint/spoiled_onions).  It is quite easy to
+develop new modules for `exitmap`; just have a look at the file HACKING in the
+doc/ directory.
 
 Installation
 ------------
@@ -28,16 +31,20 @@ Running exitmap
 
 You can run `exitmap` with the checktest module by executing:
 
-    $ python exitmap.py CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912 checktest
+    $ ./bin/exitmap CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912 checktest
 
 To run the same test over German exit relays only, execute:
 
-    $ python exitmap.py -C DE CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912 checktest
+    $ ./bin/exitmap -C DE CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912 checktest
 
 Note that
 [`CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912`](https://atlas.torproject.org/#details/CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912)
 is a relay run by Karlstad University.  While you can feel free to use it,
 please use your own relays in order to distribute the scanning load.
+
+To get an overview of `exitmap`'s options, execute:
+
+    $ ./bin/exitmap -h
 
 Alternatives
 ------------
