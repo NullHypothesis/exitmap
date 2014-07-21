@@ -250,6 +250,6 @@ class EventHandler(object):
             self.new_stream(event)
 
         else:
-            logger.warning("Received unexpected event: " % str(event))
 
         self.is_finished()
+            logger.warning("Received unexpected event %s." % str(event))
