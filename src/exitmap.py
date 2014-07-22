@@ -218,7 +218,11 @@ def select_exits(args, module):
 
 def run_module(module_name, args, controller, stats):
     logger.info("Running module '%s'." % module_name)
-    module = __import__("modules.%s" % module_name, fromlist=[module_name])
+    try:
+        module = __import__("modules.%s" % module_name, fromlist=[module_name])
+    except ImportError as err:
+        logger.error("Failed to load module because: %s" % err)
+        return
 
     exit_relays = select_exits(args, module)
 
