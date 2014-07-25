@@ -31,6 +31,24 @@ import log
 
 logger = log.get_logger()
 
+def decorator(queue, orig_socket, module, *module_args):
+
+    def wrapper():
+
+        try:
+            module(*module_args)
+
+            tmp_socket = socket.socket
+            socket.socket = orig_socket
+
+            logger.debug("Informing event handler that module finished.")
+            queue.put((None, None))
+
+            socket.socket = tmp_socket
+        except KeyboardInterrupt:
+            pass
+
+    return wrapper
 
 class EventHandler(object):
     """
@@ -50,33 +68,17 @@ class EventHandler(object):
         self.attachers = {}
         self.controller = controller
         self.probing_module = probing_module
-        self.finished_streams = 0
         self.origsock = socket.socket
-
-        self.our_stream_events = [
-            StreamStatus.NEW,
-            StreamStatus.NEWRESOLVE,
-            StreamStatus.CLOSED,
-            StreamStatus.FAILED,
-            StreamStatus.DETACHED,
-        ]
-
-        self.our_circuit_events = [
-            CircStatus.BUILT,
-            CircStatus.FAILED,
-            CircStatus.CLOSED,
-        ]
-
         self.manager = multiprocessing.Manager()
         self.queue = self.manager.Queue()
 
         queue_threaed = threading.Thread(target=self.queue_reader)
-        queue_threaed.setDaemon(1)
+        queue_threaed.daemon = False
         queue_threaed.start()
 
         mysocks.setdefaultproxy(mysocks.PROXY_TYPE_SOCKS5, "127.0.0.1", 45678)
 
-    def prepare_attach(self, port, circuit_id=None, stream_id=None):
+    def prepare_attach(self, port, circuit_id = None, stream_id = None):
         """
         Prepare for attaching a stream to a circuit.
 
@@ -126,6 +128,8 @@ class EventHandler(object):
         except stem.OperationFailed as err:
             logger.warning("Couldn't attach stream because: %s" % str(err))
 
+        self.check_finished()
+
     def queue_reader(self):
         """
         Read (circuit ID, sockname) tuples from invoked probing modules.
@@ -134,22 +138,31 @@ class EventHandler(object):
         circuits.
         """
 
-        logger.info("Starting to read from IPC queue.")
+        logger.info("Starting thread to read from IPC queue.")
 
         while True:
-            circ_id, sockname = self.queue.get()
-
-            if circ_id == sockname == None:
+            try:
+                circ_id, sockname = self.queue.get()
+            except EOFError:
+                logger.info("IPC queue terminated.")
                 break
 
-            _, port = sockname[0], int(sockname[1])
-            logger.debug("Read from queue: %s, %s" % (circ_id, str(sockname)))
+            # Over the queue, a module can either signal that it finished
+            # execution (by sending (None,None)) or that it is ready to have
+            # its stream attached to a circuit (by sending (circuit
+            # id,sockname)).
 
-            self.prepare_attach(port, circuit_id=circ_id)
+            if circ_id == sockname == None:
+                self.stats.finished_streams += 1
+                self.stats.print_progress()
+                self.check_finished()
+            else:
+                _, port = sockname[0], int(sockname[1])
+                logger.debug("Read from queue: %s, %s" % (circ_id,
+                                                          str(sockname)))
+                self.prepare_attach(port, circuit_id = circ_id)
 
-        logger.info("Stopping to read from IPC queue.")
-
-    def is_finished(self):
+    def check_finished(self):
         """
         Check if the scan is finished and if it is, shut down exitmap.
         """
@@ -161,20 +174,23 @@ class EventHandler(object):
 
         # Was every built circuit attached to a stream?
 
-        streams_done = (self.finished_streams >= self.stats.successful_circuits)
+        streams_done = (self.stats.finished_streams >=
+                (self.stats.successful_circuits - self.stats.failed_circuits))
 
         logger.debug("failedCircs=%d, builtCircs=%d, totalCircs=%d, "
-                     "finished_streams=%d" % (
+                     "finishedStreams=%d" % (
                          self.stats.failed_circuits,
                          self.stats.successful_circuits,
                          self.stats.total_circuits,
-                         self.finished_streams))
+                         self.stats.finished_streams))
 
         if circs_done and streams_done:
-            # Terminate the thread which handles the queue.
-            socket.socket = mysocks._orgsocket
-            self.queue.put((None, None))
-            logger.info("Finished scan: %s" % self.stats)
+
+            for proc in multiprocessing.active_children():
+                logger.debug("Terminating remaining PID %d." % proc.pid)
+                proc.terminate()
+
+            logger.info(self.stats)
             exit(0)
 
     def new_circuit(self, circ_event):
@@ -182,30 +198,34 @@ class EventHandler(object):
         Invoke a new probing module when a new circuit becomes ready.
         """
 
-        if circ_event.status not in self.our_circuit_events:
+        self.stats.update_circs(circ_event)
+        self.check_finished()
+
+        if circ_event.status not in [CircStatus.BUILT]:
             return
 
-        # Keep track of how many circuits are already finished.
-
-        if circ_event.status in [CircStatus.FAILED, CircStatus.CLOSED]:
-            logger.debug("Circuit closed because: %s" % str(circ_event.reason))
-            self.stats.failed_circuits += 1
-            return
-
-        self.stats.successful_circuits += 1
-        self.stats.print_progress()
-        exit_fpr = circ_event.path[-1][0]
+        last_hop = circ_event.path[-1]
+        exit_fpr = last_hop[0]
         logger.debug("Circuit for exit relay \"%s\" is built.  "
                      "Now invoking probing module." % exit_fpr)
 
+        # Prepare the execution environment.  In particular, a Command() object
+        # to execute external tools and a decorator for the probing module we
+        # are about to run.
+
         cmd = command.Command("/tmp/torsocks.conf", self.queue, circ_event.id,
                               self.origsock)
+        func = decorator(self.queue, self.origsock, self.probing_module,
+                         exit_fpr, cmd)
+
+        # Monkey-patch the socket API to redirect network traffic originating
+        # from our Python process to Tor's SOCKS port.
+
         socket.socket = mysocks.socksocket
         mysocks.setqueue(self.queue, circ_event.id)
 
-        # Invoke the module in a dedicated process.
-        proc = multiprocessing.Process(target=self.probing_module,
-                                       args=(exit_fpr, cmd,))
+        proc = multiprocessing.Process(target=func)
+        proc.daemon = True
         proc.start()
 
     def new_stream(self, stream_event):
@@ -217,18 +237,11 @@ class EventHandler(object):
         point and wait for the attaching to be done in queue_reader().
         """
 
-        if stream_event.status not in self.our_stream_events:
-            return
-
-        # Keep track of how many streams are already finished.
-
-        if stream_event.status in [StreamStatus.CLOSED, StreamStatus.FAILED,
-                                   StreamStatus.DETACHED]:
-            self.finished_streams += 1
+        if stream_event.status not in [StreamStatus.NEW,
+                                       StreamStatus.NEWRESOLVE]:
             return
 
         port = util.get_source_port(str(stream_event))
-
         if not port:
             logger.warning("Couldn't extract source port from stream " \
                            "event: %s" % str(stream_event))
@@ -236,7 +249,7 @@ class EventHandler(object):
 
         logger.debug("Adding attacher for new stream %s." % stream_event.id)
 
-        self.prepare_attach(port, stream_id=stream_event.id)
+        self.prepare_attach(port, stream_id = stream_event.id)
 
     def new_event(self, event):
         """
@@ -250,6 +263,4 @@ class EventHandler(object):
             self.new_stream(event)
 
         else:
-
-        self.is_finished()
             logger.warning("Received unexpected event %s." % str(event))

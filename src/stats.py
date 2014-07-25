@@ -17,6 +17,8 @@
 
 from datetime import datetime
 
+from stem import CircStatus
+
 import log
 
 logger = log.get_logger()
@@ -33,13 +35,26 @@ class Statistics(object):
         self.failed_circuits = 0
         self.successful_circuits = 0
         self.modules_run = 0
+        self.finished_streams = 0
+        self.failed_streams = 0
 
-    def print_progress(self, sampling=10):
+    def update_circs(self, circ_event):
+
+        if circ_event.status in [CircStatus.FAILED, CircStatus.CLOSED]:
+
+            logger.debug("Circuit failed because: %s" % str(circ_event.reason))
+            self.failed_circuits += 1
+
+        elif circ_event.status in [CircStatus.BUILT]:
+
+            self.successful_circuits += 1
+
+    def print_progress(self, sampling = 50):
         """
         Print statistics about ongoing probing process.
         """
 
-        if self.successful_circuits % sampling:
+        if self.finished_streams % sampling:
             return
 
         assert self.total_circuits > 0
@@ -57,10 +72,8 @@ class Statistics(object):
         Print the gathered statistics.
         """
 
-        ret = "Determining scan statistics.\n"
-        ret += "Ran %d modules.\n" % self.modules_run
-        ret += "%d of %d circuits failed.\n" % (self.failed_circuits,
-                                                self.total_circuits)
-        ret += "Scan time: %s." % str(datetime.now() - self.start_time)
+        return "Ran %d module(s) in %s and %d/%d circuits failed." % \
+               (self.modules_run, str(datetime.now() - self.start_time),
+                self.failed_circuits, self.total_circuits)
 
         return ret
