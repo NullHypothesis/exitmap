@@ -19,7 +19,6 @@ import os
 import sys
 import time
 import socket
-import string
 import pkgutil
 import argparse
 import datetime
@@ -144,7 +143,7 @@ def main():
     stats = Statistics()
     args = parse_cmd_args()
 
-    logger.setLevel(logging.__dict__[string.upper(args.verbosity)])
+    logger.setLevel(logging.__dict__[args.verbosity.upper()])
 
     logger.debug("Command line arguments: %s" % str(args))
 
