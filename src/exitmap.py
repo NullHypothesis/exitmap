@@ -48,27 +48,31 @@ def bootstrap_tor(temp_dir):
     Invoke a Tor process which is subsequently used by exitmap.
     """
 
-    logger.debug("Attempting to invoke Tor process in directory \"%s\"." %
+    logger.info("Attempting to invoke Tor process in directory \"%s\"." %
                  temp_dir)
 
-    proc = stem.process.launch_tor_with_config(
-        config={
-            "SOCKSPort": "45678",
-            "ControlPort": "45679",
-            "DataDirectory": temp_dir,
-            "CookieAuthentication": "1",
-            "LearnCircuitBuildTimeout": "0",
-            "CircuitBuildTimeout": "40",
-            "__DisablePredictedCircuits": "1",
-            "__LeaveStreamsUnattached": "1",
-            "FetchHidServDescriptors": "0",
-            "UseMicroDescriptors": "0",
-        },
-        timeout=90,
-        take_ownership=True,
-        completion_percent=80,
-        init_msg_handler=lambda line: logger.info("Tor says: %s" % line),
-    )
+    try:
+        proc = stem.process.launch_tor_with_config(
+            config={
+                "SOCKSPort": "45678",
+                "ControlPort": "45679",
+                "DataDirectory": temp_dir,
+                "CookieAuthentication": "1",
+                "LearnCircuitBuildTimeout": "0",
+                "CircuitBuildTimeout": "40",
+                "__DisablePredictedCircuits": "1",
+                "__LeaveStreamsUnattached": "1",
+                "FetchHidServDescriptors": "0",
+                "UseMicroDescriptors": "0",
+            },
+            timeout=90,
+            take_ownership=True,
+            completion_percent=80,
+            init_msg_handler=lambda line: logger.debug("Tor says: %s" % line),
+        )
+    except OSError as err:
+        logger.error("Could not start Tor because: %s" % err)
+        exit(1)
 
     logger.info("Successfully started Tor process (PID=%d)." % proc.pid)
 
