@@ -177,10 +177,11 @@ def main():
 
 def select_exits(args, module):
     """
-    Based on the module's intended destinations, select exit relays to probe.
+    Select exit relays which allow exiting to the module's scan destinations.
 
-    Exit relays are selected for probing if their exit policy allows exiting to
-    the module's intended destinations.
+    We select exit relays based on their published exit policy.  In particular,
+    we check if the exit relay's exit policy specifies that we can connect to
+    our intended destination(s).
     """
 
     before = datetime.datetime.now()
@@ -221,6 +222,10 @@ def select_exits(args, module):
 
 
 def run_module(module_name, args, controller, stats):
+    """
+    Run an exitmap module over all available exit relays.
+    """
+
     logger.info("Running module '%s'." % module_name)
     try:
         module = __import__("modules.%s" % module_name, fromlist=[module_name])
