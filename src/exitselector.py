@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with exitmap.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import sys
 import argparse
 
@@ -59,12 +60,28 @@ def parse_cmd_args():
 def get_exits(consensus, country_code=None, bad_exit=False,
               version=None, nickname=None, address=None, hosts=[]):
 
+    # try to find descriptors for the exit policy
+    cached_descriptors = {}
+    cached_descriptors_path = os.path.join(os.path.dirname(consensus), "cached-descriptors")
+    if os.path.exists(cached_descriptors_path):
+        for desc in stem.descriptor.parse_file(cached_descriptors_path):
+            cached_descriptors[desc.fingerprint] = desc
+
     all_exits = [desc for desc in stem.descriptor.parse_file(consensus) if stem.Flag.EXIT in desc.flags]
     exits = list(all_exits)  # exits that match our given criteria
 
     if hosts:
         def can_exit_to(desc):
             for (ip, port) in hosts:
+                # check if we have the full policy
+                e = cached_descriptors.get(desc.fingerprint, None)
+                if e:
+                    if e.exit_policy.can_exit_to(ip, port):
+                        return True
+                    else:
+                        continue
+
+                # use the summary from the consensus
                 if desc.exit_policy.can_exit_to(ip, port):
                     return True
 
