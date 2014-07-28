@@ -16,6 +16,7 @@
 # along with exitmap.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+import os
 
 from stem.descriptor.reader import DescriptorReader
 
@@ -27,7 +28,7 @@ def get_consensus_path(args):
     if args.consensus:
         return args.consensus
     else:
-        return args.temp_dir + "/cached-consensus"
+        return os.path.join(args.temp_dir, "cached-consensus")
 
 def relay_in_consensus(fingerprint, consensus):
     """
