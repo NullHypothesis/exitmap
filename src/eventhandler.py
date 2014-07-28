@@ -19,6 +19,7 @@ import functools
 import threading
 import multiprocessing
 import socket
+import sys
 
 import stem
 from stem import StreamStatus
@@ -31,24 +32,35 @@ import log
 
 logger = log.get_logger()
 
-def decorator(queue, orig_socket, module, *module_args):
 
-    def wrapper():
+def func(queue, circ_event_id, module, exit_fpr):
 
-        try:
-            module(*module_args)
+    orig_socket = socket.socket
+    mysocks.setdefaultproxy(mysocks.PROXY_TYPE_SOCKS5, "127.0.0.1", 45678)
 
-            tmp_socket = socket.socket
-            socket.socket = orig_socket
+    # Prepare the execution environment.  In particular, a Command() object
+    # to execute external tools and a decorator for the probing module we
+    # are about to run.
 
-            logger.debug("Informing event handler that module finished.")
-            queue.put((None, None))
+    cmd = command.Command("/tmp/torsocks.conf", queue, circ_event_id,
+                          orig_socket)
 
-            socket.socket = tmp_socket
-        except KeyboardInterrupt:
-            pass
+    # Monkey-patch the socket API to redirect network traffic originating
+    # from our Python process to Tor's SOCKS port.
 
-    return wrapper
+    socket.socket = mysocks.socksocket
+    mysocks.setqueue(queue, circ_event_id)
+
+    try:
+        module(exit_fpr, cmd)
+        socket.socket = orig_socket
+
+        logger.debug("Informing event handler that module finished.")
+        queue.put((None, None))
+
+    except KeyboardInterrupt:
+        pass
+
 
 class EventHandler(object):
     """
@@ -71,6 +83,7 @@ class EventHandler(object):
         self.origsock = socket.socket
         self.manager = multiprocessing.Manager()
         self.queue = self.manager.Queue()
+        self.pool = multiprocessing.Pool()
 
         queue_threaed = threading.Thread(target=self.queue_reader)
         queue_threaed.daemon = False
@@ -185,13 +198,15 @@ class EventHandler(object):
                          self.stats.finished_streams))
 
         if circs_done and streams_done:
+            self.pool.close()
+            self.pool.join()
 
             for proc in multiprocessing.active_children():
                 logger.debug("Terminating remaining PID %d." % proc.pid)
                 proc.terminate()
 
             logger.info(self.stats)
-            exit(0)
+            sys.exit(0)
 
     def new_circuit(self, circ_event):
         """
@@ -209,24 +224,8 @@ class EventHandler(object):
         logger.debug("Circuit for exit relay \"%s\" is built.  "
                      "Now invoking probing module." % exit_fpr)
 
-        # Prepare the execution environment.  In particular, a Command() object
-        # to execute external tools and a decorator for the probing module we
-        # are about to run.
-
-        cmd = command.Command("/tmp/torsocks.conf", self.queue, circ_event.id,
-                              self.origsock)
-        func = decorator(self.queue, self.origsock, self.probing_module,
-                         exit_fpr, cmd)
-
-        # Monkey-patch the socket API to redirect network traffic originating
-        # from our Python process to Tor's SOCKS port.
-
-        socket.socket = mysocks.socksocket
-        mysocks.setqueue(self.queue, circ_event.id)
-
-        proc = multiprocessing.Process(target=func)
-        proc.daemon = True
-        proc.start()
+        self.pool.apply_async(func, args=(self.queue, circ_event.id,
+                                          self.probing_module, exit_fpr))
 
     def new_stream(self, stream_event):
         """
