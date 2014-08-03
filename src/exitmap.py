@@ -23,6 +23,7 @@ import argparse
 import datetime
 import random
 import logging
+import ConfigParser
 
 import stem
 import stem.connection
@@ -41,20 +42,26 @@ from stats import Statistics
 logger = log.get_logger()
 
 
-def bootstrap_tor(temp_dir):
+def bootstrap_tor(args):
     """
     Invoke a Tor process which is subsequently used by exitmap.
     """
 
     logger.info("Attempting to invoke Tor process in directory \"%s\"." %
-                 temp_dir)
+                 args.temp_dir)
+
+    if not args.first_hop:
+        logger.warning("No first hop given.  Using single-hop circuits.  " \
+                       "This will most likely not work for any relays.")
 
     try:
         proc = stem.process.launch_tor_with_config(
             config={
                 "SOCKSPort": "45678",
                 "ControlPort": "45679",
-                "DataDirectory": temp_dir,
+                "AllowSingleHopCircuits": str(int(args.first_hop == None)),
+                "ExcludeSingleHopRelays": str(int(args.first_hop != None)),
+                "DataDirectory": args.temp_dir,
                 "CookieAuthentication": "1",
                 "LearnCircuitBuildTimeout": "0",
                 "CircuitBuildTimeout": "40",
@@ -82,9 +89,35 @@ def parse_cmd_args():
     Parse and return command line arguments.
     """
 
-    parser = argparse.ArgumentParser(description="Perform a task over (a "
-                                                 "subset of) all Tor exit "
-                                                 "relays.")
+    desc = "Perform a task over (a subset of) all Tor exit relays."
+    parser = argparse.ArgumentParser(description = desc, add_help = False)
+
+    parser.add_argument("-f", "--config-file", type=str, default=None,
+                        help="Path to the configuration file.")
+
+    args, remaining_argv = parser.parse_known_args()
+
+    # First, try to load the configuration file and load its content as our
+    # defaults.
+
+    if args.config_file:
+        config_file = args.config_file
+    else:
+        home_dir = os.path.expanduser("~")
+        config_file = os.path.join(home_dir, ".exitmaprc")
+
+    config_parser = ConfigParser.SafeConfigParser()
+    config_parser.read([config_file])
+    try:
+        defaults = dict(config_parser.items("Defaults"))
+    except ConfigParser.NoSectionError as err:
+        logger.warning("Could not parse config file: %s" % err)
+        defaults = {}
+
+    parser = argparse.ArgumentParser(parents = [parser])
+    parser.set_defaults(**defaults)
+
+    # Now, load the arguments given over the command line.
 
     group = parser.add_mutually_exclusive_group()
 
@@ -114,7 +147,7 @@ def parse_cmd_args():
                              "in ascending order: debug, info, warning, "
                              "error, critical).  The default is info.")
 
-    parser.add_argument("first_hop", type=str, default="",
+    parser.add_argument("-i", "--first-hop", type=str, default=None,
                         help="The 20-byte fingerprint of the Tor relay which "
                              "is used as first hop.  This relay should be "
                              "under your control.")
@@ -123,7 +156,9 @@ def parse_cmd_args():
                         help="Run the given module (available: %s)." %
                         ", ".join(get_modules()))
 
-    return parser.parse_args()
+    parser.set_defaults(**defaults)
+
+    return parser.parse_args(remaining_argv)
 
 
 def get_modules():
@@ -146,7 +181,7 @@ def main():
 
     logger.debug("Command line arguments: %s" % str(args))
 
-    bootstrap_tor(args.temp_dir)
+    bootstrap_tor(args)
     controller = Controller.from_port(port=45679)
     stem.connection.authenticate(controller)
 
@@ -161,8 +196,9 @@ def main():
 
     controller.set_conf("FetchServerDescriptors", "0")
 
-    if not util.relay_in_consensus(args.first_hop,
-                                   util.get_consensus_path(args)):
+    if args.first_hop and \
+       (not util.relay_in_consensus(args.first_hop,
+                                    util.get_consensus_path(args))):
         logger.error("Given first hop \"%s\" not found in consensus.  Is it " \
                      "offline?" % args.first_hop)
         return 1
@@ -256,7 +292,10 @@ def run_module(module_name, args, controller, stats):
 
     for exit_relay in exit_relays:
         try:
-            controller.new_circuit([args.first_hop] + [exit_relay])
+            if args.first_hop:
+                controller.new_circuit([args.first_hop] + [exit_relay])
+            else:
+                controller.new_circuit([exit_relay])
         except stem.ControllerError as err:
             stats.failed_circuits += 1
             logger.warning("Circuit with exit relay \"%s\" could not be "
