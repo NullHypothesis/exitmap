@@ -32,6 +32,7 @@ import stem.process
 import stem.descriptor
 from stem.control import Controller, EventType
 
+import modules
 import log
 import error
 import util
@@ -167,7 +168,9 @@ def get_modules():
     Return all modules located in "modules/".
     """
 
-    return [name for _, name, _ in pkgutil.iter_modules(["modules"])]
+    modules_path = os.path.dirname(modules.__file__)
+
+    return [name for _, name, _ in pkgutil.iter_modules([modules_path])]
 
 
 def main():
