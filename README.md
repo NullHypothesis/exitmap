@@ -31,20 +31,34 @@ Running exitmap
 
 You can run `exitmap` with the checktest module by executing:
 
-    $ ./bin/exitmap CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912 checktest
+    $ ./bin/exitmap --first-hop CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912 checktest
 
 To run the same test over German exit relays only, execute:
 
-    $ ./bin/exitmap -C DE CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912 checktest
+    $ ./bin/exitmap --first-hop -C DE CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912 checktest
 
 Note that
 [`CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912`](https://atlas.torproject.org/#details/CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912)
 is a relay run by Karlstad University.  While you can feel free to use it,
-please use your own relays in order to distribute the scanning load.
+please use your own relays in order to distribute the scanning load.  If you do
+not specify a first hop, `exitmap` attempts to use single-hop circuits.  This
+will not work for the majority of exit relays and is almost certainly not what
+you want.
 
 To get an overview of `exitmap`'s options, execute:
 
     $ ./bin/exitmap -h
+
+Configuration
+-------------
+
+By default, `exitmap` tries to read the file .exitmaprc in your home directory.
+The file can have the following format.
+
+    [Defaults]
+    first_hop = CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912
+    verbosity = debug
+    build_delay = 1
 
 Alternatives
 ------------
