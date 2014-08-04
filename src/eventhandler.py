@@ -73,9 +73,9 @@ class EventHandler(object):
         self.manager = multiprocessing.Manager()
         self.queue = self.manager.Queue()
 
-        queue_threaed = threading.Thread(target=self.queue_reader)
-        queue_threaed.daemon = False
-        queue_threaed.start()
+        queue_thread = threading.Thread(target=self.queue_reader)
+        queue_thread.daemon = False
+        queue_thread.start()
 
         mysocks.setdefaultproxy(mysocks.PROXY_TYPE_SOCKS5, "127.0.0.1", 45678)
 
