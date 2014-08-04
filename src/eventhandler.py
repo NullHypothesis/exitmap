@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with exitmap.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
 import functools
 import threading
 import multiprocessing
@@ -191,7 +192,7 @@ class EventHandler(object):
                 proc.terminate()
 
             logger.info(self.stats)
-            exit(0)
+            sys.exit(0)
 
     def new_circuit(self, circ_event):
         """

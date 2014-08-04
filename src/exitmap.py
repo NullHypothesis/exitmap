@@ -16,6 +16,7 @@
 # along with exitmap.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import sys
 import time
 import socket
 import pkgutil
@@ -77,7 +78,7 @@ def bootstrap_tor(args):
         )
     except OSError as err:
         logger.error("Could not start Tor because: %s" % err)
-        exit(1)
+        sys.exit(1)
 
     logger.info("Successfully started Tor process (PID=%d)." % proc.pid)
 
@@ -225,7 +226,7 @@ def select_exits(args, module):
 
     if not os.path.exists(consensus):
         logger.critical("The consensus \"%s\" does not exist." % consensus)
-        exit(1)
+        sys.exit(1)
 
     if module.destinations is not None:
         hosts = [(socket.gethostbyname(host), port) for
