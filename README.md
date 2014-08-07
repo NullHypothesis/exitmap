@@ -35,7 +35,7 @@ You can run `exitmap` with the checktest module by executing:
 
 To run the same test over German exit relays only, execute:
 
-    $ ./bin/exitmap --first-hop -C DE CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912 checktest
+    $ ./bin/exitmap -C DE --first-hop CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912 checktest
 
 Note that
 [`CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912`](https://atlas.torproject.org/#details/CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912)
