@@ -5,8 +5,10 @@ Overview
 
 `exitmap` is a fast and extensible Python-based scanner for
 [Tor](https://www.torproject.org)  exit relays.  Modules implement tasks which
-are then run over (a subset of) all exit relays.  In practice, `exitmap` is
-useful to monitor the reliability and trustworthiness of exit relays.
+are then run over (a subset of) all exit relays.  If you have a background in
+functional programming, think of `exitmap` as a `map()` interface for all Tor
+exit relays.  In practice, `exitmap` is useful to monitor the reliability and
+trustworthiness of exit relays.
 
 `exitmap` uses [`Stem`](https://stem.torproject.org) to initiate circuits over
 all given exit relays and as soon as `tor` notifies `exitmap` of an established
