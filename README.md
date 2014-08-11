@@ -4,11 +4,11 @@ Overview
 --------
 
 `exitmap` is a fast and extensible Python-based scanner for
-[Tor](https://www.torproject.org)  exit relays.  Modules implement tasks which
-are then run over (a subset of) all exit relays.  If you have a background in
-functional programming, think of `exitmap` as a `map()` interface for all Tor
-exit relays.  In practice, `exitmap` is useful to monitor the reliability and
-trustworthiness of exit relays.
+[Tor](https://www.torproject.org) exit relays.  Modules implement tasks which
+are then run over all exit relays or a subset thereof.  If you have a
+background in functional programming, think of `exitmap` as a `map()` interface
+for Tor exit relays.  In practice, `exitmap` is useful to monitor the
+reliability and trustworthiness of exit relays.
 
 `exitmap` uses [`Stem`](https://stem.torproject.org) to initiate circuits over
 all given exit relays and as soon as `tor` notifies `exitmap` of an established
@@ -33,11 +33,20 @@ Running exitmap
 
 You can run `exitmap` with the checktest module by executing:
 
+    $ ./bin/exitmap checktest
+
+If you want to use a static first hop, execute:
+
     $ ./bin/exitmap --first-hop CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912 checktest
 
 To run the same test over German exit relays only, execute:
 
     $ ./bin/exitmap -C DE --first-hop CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912 checktest
+
+If you want to pause for 5 seconds in between circuits creations in order to
+reduce the load on the Tor network and the scanning destination, execute
+
+    $ ./bin/exitmap -d 5 checktest
 
 Note that
 [`CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912`](https://atlas.torproject.org/#details/CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912)
