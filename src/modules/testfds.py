@@ -29,7 +29,7 @@ import log
 
 logger = log.get_logger()
 
-destinations = [("people.torproject.org", 80)]
+destinations = [("people.torproject.org", 443)]
 
 def probe(exit_fpr, _):
     """
