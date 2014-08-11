@@ -51,6 +51,16 @@ To get an overview of `exitmap`'s options, execute:
 
     $ ./bin/exitmap -h
 
+`exitmap` comes with the following modules.
+
+* `testfds`: Tests if an exit relay is able to fetch the content of a simple
+  web page.  If an exit relay is unable to do that, it might not have enough
+  file descriptors available.
+* `checktest`: Attempts to find false positives in the Tor Project's
+  [check](https://check.torproject.org) service.
+* `dns`: Attempts to resolve several domains and compares the received A
+  records to the expected records.
+
 Configuration
 -------------
 
