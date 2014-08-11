@@ -52,9 +52,8 @@ Note that
 [`CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912`](https://atlas.torproject.org/#details/CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912)
 is a relay run by Karlstad University.  While you can feel free to use it,
 please use your own relays in order to distribute the scanning load.  If you do
-not specify a first hop, `exitmap` attempts to use single-hop circuits.  This
-will not work for the majority of exit relays and is almost certainly not what
-you want.
+not specify a first hop, `exitmap` will randomly select first hops, one for
+each circuit.
 
 To get an overview of `exitmap`'s options, execute:
 

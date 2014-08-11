@@ -56,6 +56,20 @@ def parse_cmd_args():
 
     return parser.parse_args()
 
+def get_fingerprints(consensus, exclude = []):
+    """
+    Get all relay fingerprints in the provided consensus.
+
+    Relay fingerprints which are present in the list `exclude' are ignored.
+    """
+
+    fingerprints = []
+
+    for desc in stem.descriptor.parse_file(consensus):
+        if desc.fingerprint not in exclude:
+            fingerprints.append(desc.fingerprint)
+
+    return fingerprints
 
 def get_exits(consensus, country_code=None, bad_exit=False,
               version=None, nickname=None, address=None, hosts=[]):

@@ -36,7 +36,7 @@ import modules
 import log
 import error
 import util
-import exitselector
+import relayselector
 
 from eventhandler import EventHandler
 from stats import Statistics
@@ -53,16 +53,14 @@ def bootstrap_tor(args):
                  args.temp_dir)
 
     if not args.first_hop:
-        logger.warning("No first hop given.  Using single-hop circuits.  " \
-                       "This will most likely not work for any relays.")
+        logger.info("No first hop given.  Using randomly determined first " \
+                    "hops for circuits.")
 
     try:
         proc = stem.process.launch_tor_with_config(
             config={
                 "SOCKSPort": "45678",
                 "ControlPort": "45679",
-                "AllowSingleHopCircuits": str(int(args.first_hop == None)),
-                "ExcludeSingleHopRelays": str(int(args.first_hop != None)),
                 "DataDirectory": args.temp_dir,
                 "CookieAuthentication": "1",
                 "LearnCircuitBuildTimeout": "0",
@@ -241,9 +239,9 @@ def select_exits(args, module):
         exit_relays = [args.exit]
         total = len(exit_relays)
     else:
-        total, exit_relays = exitselector.get_exits(consensus,
-                                                    country_code=args.country,
-                                                    hosts=hosts)
+        total, exit_relays = relayselector.get_exits(consensus,
+                                                     country_code=args.country,
+                                                     hosts=hosts)
 
     logger.debug("Successfully selected exit relays after %s." %
                  str(datetime.datetime.now() - before))
@@ -293,13 +291,26 @@ def run_module(module_name, args, controller, stats):
 
     before = datetime.datetime.now()
     logger.debug("Beginning to trigger %d circuit creation(s)." % count)
+    consensus = util.get_consensus_path(args)
+    fingerprints = relayselector.get_fingerprints(consensus)
 
     for exit_relay in exit_relays:
+
+        # Determine the hops in our next circuit.
+
+        if args.first_hop:
+            hops = [args.first_hop, exit_relay]
+        else:
+            all_hops = list(fingerprints)
+            all_hops.remove(exit_relay)
+            first_hop = random.choice(all_hops)
+            logger.debug("Using random first hop %s for circuit." % first_hop)
+            hops = [first_hop, exit_relay]
+
+        assert len(hops) > 1
+
         try:
-            if args.first_hop:
-                controller.new_circuit([args.first_hop] + [exit_relay])
-            else:
-                controller.new_circuit([exit_relay])
+            controller.new_circuit(hops)
         except stem.ControllerError as err:
             stats.failed_circuits += 1
             logger.warning("Circuit with exit relay \"%s\" could not be "
