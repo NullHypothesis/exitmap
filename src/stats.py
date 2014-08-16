@@ -49,7 +49,7 @@ class Statistics(object):
 
             self.successful_circuits += 1
 
-    def print_progress(self, sampling = 50):
+    def print_progress(self, sampling=50):
         """
         Print statistics about ongoing probing process.
         """
@@ -59,8 +59,8 @@ class Statistics(object):
 
         assert self.total_circuits > 0
 
-        percent_done = (float(100) / self.total_circuits) * \
-                       self.successful_circuits
+        percent_done = ((float(100) / self.total_circuits) *
+                        self.successful_circuits)
 
         logger.info("Probed %d out of %d exit relays, so we are %.2f%% done." %
                     (self.successful_circuits,

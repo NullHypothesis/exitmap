@@ -31,6 +31,7 @@ logger = log.get_logger()
 
 destinations = [("people.torproject.org", 443)]
 
+
 def probe(exit_fpr, _):
     """
     Tries to fetch a simple web page and warns us if it doesn't work.
@@ -46,7 +47,7 @@ def probe(exit_fpr, _):
     data = None
     try:
         data = urllib2.urlopen("https://people.torproject.org/~phw/test_file",
-                               timeout = 10).read()
+                               timeout=10).read()
     except Exception as err:
         logger.warning("urllib2.urlopen for %s says: %s." % (exit_url, err))
         return
@@ -59,9 +60,10 @@ def probe(exit_fpr, _):
 
     if not re.match(expected, data):
         logger.warning("Got unexpected response from %s: %s." %
-                        (exit_url, data))
+                       (exit_url, data))
     else:
         logger.debug("Exit relay %s worked fine." % exit_url)
+
 
 def main():
     """

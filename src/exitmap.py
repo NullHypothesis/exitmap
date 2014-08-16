@@ -50,10 +50,10 @@ def bootstrap_tor(args):
     """
 
     logger.info("Attempting to invoke Tor process in directory \"%s\"." %
-                 args.temp_dir)
+                args.temp_dir)
 
     if not args.first_hop:
-        logger.info("No first hop given.  Using randomly determined first " \
+        logger.info("No first hop given.  Using randomly determined first "
                     "hops for circuits.")
 
     try:
@@ -90,7 +90,7 @@ def parse_cmd_args():
     """
 
     desc = "Perform a task over (a subset of) all Tor exit relays."
-    parser = argparse.ArgumentParser(description = desc, add_help = False)
+    parser = argparse.ArgumentParser(description=desc, add_help=False)
 
     parser.add_argument("-f", "--config-file", type=str, default=None,
                         help="Path to the configuration file.")
@@ -114,7 +114,7 @@ def parse_cmd_args():
         logger.warning("Could not parse config file: %s" % err)
         defaults = {}
 
-    parser = argparse.ArgumentParser(parents = [parser])
+    parser = argparse.ArgumentParser(parents=[parser])
     parser.set_defaults(**defaults)
 
     # Now, load the arguments given over the command line.
@@ -201,7 +201,7 @@ def main():
     if args.first_hop and \
        (not util.relay_in_consensus(args.first_hop,
                                     util.get_consensus_path(args))):
-        logger.error("Given first hop \"%s\" not found in consensus.  Is it " \
+        logger.error("Given first hop \"%s\" not found in consensus.  Is it "
                      "offline?" % args.first_hop)
         return 1
 
@@ -247,8 +247,8 @@ def select_exits(args, module):
                  str(datetime.datetime.now() - before))
 
     logger.info("%d%s exits out of all %s exit relays allow exiting to %s." %
-                (len(exit_relays), " %s" % args.country if args.country else "",
-                 total, hosts))
+                (len(exit_relays), " %s" %
+                 args.country if args.country else "", total, hosts))
 
     assert isinstance(exit_relays, list)
 

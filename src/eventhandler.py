@@ -32,6 +32,7 @@ import log
 
 logger = log.get_logger()
 
+
 def decorator(queue, orig_socket, module, *module_args):
 
     def wrapper():
@@ -50,6 +51,7 @@ def decorator(queue, orig_socket, module, *module_args):
             pass
 
     return wrapper
+
 
 class EventHandler(object):
     """
@@ -79,13 +81,13 @@ class EventHandler(object):
 
         mysocks.setdefaultproxy(mysocks.PROXY_TYPE_SOCKS5, "127.0.0.1", 45678)
 
-    def prepare_attach(self, port, circuit_id = None, stream_id = None):
+    def prepare_attach(self, port, circuit_id=None, stream_id=None):
         """
         Prepare for attaching a stream to a circuit.
 
         If we already have the corresponding stream/circuit, it can be attached
-        right now.  Otherwise, the method _attach_stream() is partially executed
-        and stored so it can be attached at a later point.
+        right now.  Otherwise, the method _attach_stream() is partially
+        executed and stored so it can be attached at a later point.
         """
 
         assert ((circuit_id is not None) and (stream_id is None)) or \
@@ -153,7 +155,7 @@ class EventHandler(object):
             # its stream attached to a circuit (by sending (circuit
             # id,sockname)).
 
-            if circ_id == sockname == None:
+            if (circ_id is None) or (sockname is None):
                 self.stats.finished_streams += 1
                 self.stats.print_progress()
                 self.check_finished()
@@ -161,7 +163,7 @@ class EventHandler(object):
                 _, port = sockname[0], int(sockname[1])
                 logger.debug("Read from queue: %s, %s" % (circ_id,
                                                           str(sockname)))
-                self.prepare_attach(port, circuit_id = circ_id)
+                self.prepare_attach(port, circuit_id=circ_id)
 
     def check_finished(self):
         """
@@ -170,13 +172,15 @@ class EventHandler(object):
 
         # Did all circuits either build or fail?
 
-        circs_done = (self.stats.failed_circuits +
-                      self.stats.successful_circuits) == self.stats.total_circuits
+        circs_done = ((self.stats.failed_circuits +
+                       self.stats.successful_circuits) ==
+                      self.stats.total_circuits)
 
         # Was every built circuit attached to a stream?
 
         streams_done = (self.stats.finished_streams >=
-                (self.stats.successful_circuits - self.stats.failed_circuits))
+                        (self.stats.successful_circuits -
+                         self.stats.failed_circuits))
 
         logger.debug("failedCircs=%d, builtCircs=%d, totalCircs=%d, "
                      "finishedStreams=%d" % (
@@ -244,13 +248,13 @@ class EventHandler(object):
 
         port = util.get_source_port(str(stream_event))
         if not port:
-            logger.warning("Couldn't extract source port from stream " \
+            logger.warning("Couldn't extract source port from stream "
                            "event: %s" % str(stream_event))
             return
 
         logger.debug("Adding attacher for new stream %s." % stream_event.id)
 
-        self.prepare_attach(port, stream_id = stream_event.id)
+        self.prepare_attach(port, stream_id=stream_event.id)
 
     def new_event(self, event):
         """

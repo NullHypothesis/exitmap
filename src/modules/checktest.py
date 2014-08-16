@@ -63,6 +63,7 @@ def probe(exit_fpr, cmd):
         logger.debug("Exit relay <https://globe.torproject.org/#/relay/%s> "
                      "passed the check test." % exit_fpr)
 
+
 def main():
     """
     Entry point when invoked over the command line.

@@ -146,13 +146,16 @@ _socks5autherrors = (
 _socks4errors = (
     "request granted",
     "request rejected or failed",
-    "request rejected because SOCKS server cannot connect to identd on the client",
-    "request rejected because the client program and identd report different user-ids",
+    "request rejected because SOCKS server cannot connect to identd "
+    "on the client",
+    "request rejected because the client program and identd report "
+    "different user-ids",
     "unknown error",
 )
 
 
-def setdefaultproxy(proxytype=None, addr=None, port=None, rdns=True, username=None, password=None):
+def setdefaultproxy(proxytype=None, addr=None, port=None, rdns=True,
+                    username=None, password=None):
     """setdefaultproxy(proxytype, addr[, port[, rdns[, username[, password]]]])
     Sets a default proxy which all further socksocket objects will use,
     unless explicitly changed.
@@ -177,7 +180,8 @@ class socksocket(socket.socket):
     you must specify family=AF_INET, type=SOCK_STREAM and proto=0.
     """
 
-    def __init__(self, family=socket.AF_INET, type=socket.SOCK_STREAM, proto=0, _sock=None):
+    def __init__(self, family=socket.AF_INET, type=socket.SOCK_STREAM,
+                 proto=0, _sock=None):
         _orgsocket.__init__(self, family, type, proto, _sock)
 
         if _defaultproxy is not None:
@@ -200,7 +204,8 @@ class socksocket(socket.socket):
 
         return data
 
-    def setproxy(self, proxytype=None, addr=None, port=None, rdns=True, username=None, password=None):
+    def setproxy(self, proxytype=None, addr=None, port=None, rdns=True,
+                 username=None, password=None):
         """setproxy(proxytype, addr[, port[, rdns[, username[, password]]]])
         Sets the proxy to be used.
         proxytype -    The type of the proxy to be used. Three types
@@ -339,7 +344,9 @@ class socksocket(socket.socket):
             # Okay, we need to perform a basic username/password
             # authentication.
 
-            self.sendall("\x01" + chr(len(self.__proxy[4])) + self.__proxy[4] + chr(len(self.proxy[5])) + self.__proxy[5])
+            self.sendall("\x01" + chr(len(self.__proxy[4])) +
+                         self.__proxy[4] + chr(len(self.proxy[5])) +
+                         self.__proxy[5])
             authstat = self.__recvall(2)
 
             if authstat[0] != "\x01":
@@ -518,13 +525,15 @@ class socksocket(socket.socket):
 
             if ord(resp[1]) in (91, 92, 93):
                 self.close()
-                raise Socks4Error((ord(resp[1]), _socks4errors[ord(resp[1]) - 90]))
+                raise Socks4Error((ord(resp[1]),
+                                  _socks4errors[ord(resp[1]) - 90]))
             else:
                 raise Socks4Error((94, _socks4errors[4]))
 
         # Get the bound address/port
 
-        self.__proxysockname = (socket.inet_ntoa(resp[4:]), struct.unpack(">H", resp[2:4])[0])
+        self.__proxysockname = (socket.inet_ntoa(resp[4:]),
+                                struct.unpack(">H", resp[2:4])[0])
 
         if rmtrslv is not None:
             self.__proxypeername = (socket.inet_ntoa(ipaddr), destport)
@@ -543,7 +552,8 @@ class socksocket(socket.socket):
         else:
             addr = destaddr
 
-        self.sendall("CONNECT " + addr + ":" + str(destport) + " HTTP/1.1\r\n" + "Host: " + destaddr + "\r\n\r\n")
+        self.sendall("CONNECT " + addr + ":" + str(destport) +
+                     " HTTP/1.1\r\n" + "Host: " + destaddr + "\r\n\r\n")
 
         # We read the response until we get the string "\r\n\r\n"
 
@@ -585,7 +595,10 @@ class socksocket(socket.socket):
 
         # Do a minimal input check first
 
-        if (type(destpair) not in (list, tuple)) or (len(destpair) < 2) or (type(destpair[0]) != str) or (type(destpair[1]) != int):
+        if (type(destpair) not in (list, tuple)) or \
+           (len(destpair) < 2) or \
+           (type(destpair[0]) != str) or \
+           (type(destpair[1]) != int):
             raise GeneralProxyError((5, _generalerrors[5]))
 
         if self.__proxy[0] == PROXY_TYPE_SOCKS5:

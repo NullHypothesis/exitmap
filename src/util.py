@@ -20,6 +20,7 @@ import os
 
 from stem.descriptor.reader import DescriptorReader
 
+
 def get_consensus_path(args):
 
     # If no consensus was given over the command line, we take the one in the
@@ -29,6 +30,7 @@ def get_consensus_path(args):
         return args.consensus
     else:
         return os.path.join(args.temp_dir, "cached-consensus")
+
 
 def relay_in_consensus(fingerprint, consensus):
     """
@@ -46,6 +48,7 @@ def relay_in_consensus(fingerprint, consensus):
                 return True
 
     return False
+
 
 def get_source_port(stream_line):
     pattern = "SOURCE_ADDR=[0-9\.]{7,15}:([0-9]{1,5})"

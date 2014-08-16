@@ -56,7 +56,8 @@ def parse_cmd_args():
 
     return parser.parse_args()
 
-def get_fingerprints(consensus, exclude = []):
+
+def get_fingerprints(consensus, exclude=[]):
     """
     Get all relay fingerprints in the provided consensus.
 
@@ -71,17 +72,20 @@ def get_fingerprints(consensus, exclude = []):
 
     return fingerprints
 
+
 def get_exits(consensus, country_code=None, bad_exit=False,
               version=None, nickname=None, address=None, hosts=[]):
 
     # try to find descriptors for the exit policy
     cached_descriptors = {}
-    cached_descriptors_path = os.path.join(os.path.dirname(consensus), "cached-descriptors")
+    cached_descriptors_path = os.path.join(os.path.dirname(consensus),
+                                           "cached-descriptors")
     if os.path.exists(cached_descriptors_path):
         for desc in stem.descriptor.parse_file(cached_descriptors_path):
             cached_descriptors[desc.fingerprint] = desc
 
-    all_exits = [desc for desc in stem.descriptor.parse_file(consensus) if stem.Flag.EXIT in desc.flags]
+    all_exits = [desc for desc in stem.descriptor.parse_file(consensus)
+                 if stem.Flag.EXIT in desc.flags]
     exits = list(all_exits)  # exits that match our given criteria
 
     if hosts:
@@ -113,7 +117,8 @@ def get_exits(consensus, country_code=None, bad_exit=False,
         exits = filter(lambda desc: stem.Flag.BADEXIT in desc.flags, exits)
 
     if country_code:
-        exits = filter(lambda desc: ip2loc.resolve(desc.address) == country_code, exits)
+        exits = filter(lambda desc:
+                       ip2loc.resolve(desc.address) == country_code, exits)
 
     if version:
         exits = filter(lambda desc: str(desc.version) == version, exits)
