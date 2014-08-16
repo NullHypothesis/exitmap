@@ -75,5 +75,3 @@ class Statistics(object):
         return "Ran %d module(s) in %s and %d/%d circuits failed." % \
                (self.modules_run, str(datetime.now() - self.start_time),
                 self.failed_circuits, self.total_circuits)
-
-        return ret
