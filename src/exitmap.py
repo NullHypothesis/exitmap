@@ -49,7 +49,7 @@ def bootstrap_tor(args):
     Invoke a Tor process which is subsequently used by exitmap.
     """
 
-    logger.info("Attempting to invoke Tor process in directory \"%s\".  This"
+    logger.info("Attempting to invoke Tor process in directory \"%s\".  This "
                 "might take a while." % args.temp_dir)
 
     if not args.first_hop:
