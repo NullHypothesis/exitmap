@@ -313,8 +313,8 @@ def run_module(module_name, args, controller, stats):
             controller.new_circuit(hops)
         except stem.ControllerError as err:
             stats.failed_circuits += 1
-            logger.warning("Circuit with exit relay \"%s\" could not be "
-                           "created: %s" % (exit_relay, err))
+            logger.debug("Circuit with exit relay \"%s\" could not be "
+                         "created: %s" % (exit_relay, err))
 
         time.sleep(args.build_delay)
 
