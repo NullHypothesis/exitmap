@@ -263,6 +263,8 @@ def run_module(module_name, args, controller, stats):
     """
 
     logger.info("Running module '%s'." % module_name)
+    stats.modules_run += 1
+
     try:
         module = __import__("modules.%s" % module_name, fromlist=[module_name])
     except ImportError as err:
@@ -294,7 +296,7 @@ def run_module(module_name, args, controller, stats):
     consensus = util.get_consensus_path(args)
     fingerprints = relayselector.get_fingerprints(consensus)
 
-    for exit_relay in exit_relays:
+    for i, exit_relay in enumerate(exit_relays):
 
         # Determine the hops in our next circuit.
 
@@ -316,9 +318,8 @@ def run_module(module_name, args, controller, stats):
             logger.debug("Circuit with exit relay \"%s\" could not be "
                          "created: %s" % (exit_relay, err))
 
-        time.sleep(args.build_delay)
+        if i != (count - 1):
+            time.sleep(args.build_delay)
 
-    logger.debug("Done triggering circuit creations after %s." %
+    logger.info("Done triggering circuit creations after %s." %
                  str(datetime.datetime.now() - before))
-
-    stats.modules_run += 1
