@@ -56,28 +56,24 @@ def bootstrap_tor(args):
         logger.info("No first hop given.  Using randomly determined first "
                     "hops for circuits.")
 
-    try:
-        proc = stem.process.launch_tor_with_config(
-            config={
-                "SOCKSPort": "45678",
-                "ControlPort": "45679",
-                "DataDirectory": args.temp_dir,
-                "CookieAuthentication": "1",
-                "LearnCircuitBuildTimeout": "0",
-                "CircuitBuildTimeout": "40",
-                "__DisablePredictedCircuits": "1",
-                "__LeaveStreamsUnattached": "1",
-                "FetchHidServDescriptors": "0",
-                "UseMicroDescriptors": "0",
-            },
-            timeout=90,
-            take_ownership=True,
-            completion_percent=80,
-            init_msg_handler=lambda line: logger.debug("Tor says: %s" % line),
-        )
-    except OSError as err:
-        logger.error("Could not start Tor because: %s" % err)
-        sys.exit(1)
+    proc = stem.process.launch_tor_with_config(
+        config={
+            "SOCKSPort": "45678",
+            "ControlPort": "45679",
+            "DataDirectory": args.temp_dir,
+            "CookieAuthentication": "1",
+            "LearnCircuitBuildTimeout": "0",
+            "CircuitBuildTimeout": "40",
+            "__DisablePredictedCircuits": "1",
+            "__LeaveStreamsUnattached": "1",
+            "FetchHidServDescriptors": "0",
+            "UseMicroDescriptors": "0",
+        },
+        timeout=90,
+        take_ownership=True,
+        completion_percent=80,
+        init_msg_handler=lambda line: logger.debug("Tor says: %s" % line),
+    )
 
     logger.info("Successfully started Tor process (PID=%d)." % proc.pid)
 
@@ -201,9 +197,9 @@ def main():
     if args.first_hop and \
        (not util.relay_in_consensus(args.first_hop,
                                     util.get_consensus_path(args))):
-        logger.error("Given first hop \"%s\" not found in consensus.  Is it "
-                     "offline?" % args.first_hop)
-        return 1
+        raise error.PathSelectionError("Given first hop \"%s\" not found in "
+                                       "consensus.  Is it offline?" %
+                                       args.first_hop)
 
     for module_name in args.module:
         run_module(module_name, args, controller, stats)
@@ -226,8 +222,7 @@ def select_exits(args, module):
     consensus = util.get_consensus_path(args)
 
     if not os.path.exists(consensus):
-        logger.critical("The consensus \"%s\" does not exist." % consensus)
-        sys.exit(1)
+        raise IOError("The consensus file \"%s\" does not exist." % consensus)
 
     if module.destinations is not None:
         hosts = [(socket.gethostbyname(host), port) for
