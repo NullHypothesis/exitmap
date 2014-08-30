@@ -280,16 +280,15 @@ def run_module(module_name, args, controller, stats):
                                   EventType.CIRC, EventType.STREAM)
 
     logger.debug("Circuit creation delay of %.3f seconds will account for "
-                 "total delay of %.3f seconds." % (
-                     args.build_delay,
-                     count * args.build_delay))
-
-    # Start building a circuit for every exit relay we got.
+                 "total delay of %.3f seconds." % (args.build_delay,
+                                                   count * args.build_delay))
 
     before = datetime.datetime.now()
     logger.debug("Beginning to trigger %d circuit creation(s)." % count)
     consensus = util.get_consensus_path(args)
     fingerprints = relayselector.get_fingerprints(consensus)
+
+    # Start building a circuit for every exit relay we got.
 
     for i, exit_relay in enumerate(exit_relays):
 
