@@ -218,7 +218,7 @@ class EventHandler(object):
         # to execute external tools and a decorator for the probing module we
         # are about to run.
 
-        cmd = command.Command("/tmp/torsocks.conf", self.queue, circ_event.id,
+        cmd = command.Command("doc/torsocks.conf", self.queue, circ_event.id,
                               self.origsock)
         func = decorator(self.queue, self.origsock, self.probing_module,
                          exit_fpr, cmd)
