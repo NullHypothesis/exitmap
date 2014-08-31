@@ -141,13 +141,13 @@ class EventHandler(object):
         circuits.
         """
 
-        logger.info("Starting thread to read from IPC queue.")
+        logger.debug("Starting thread to read from IPC queue.")
 
         while True:
             try:
                 circ_id, sockname = self.queue.get()
             except EOFError:
-                logger.info("IPC queue terminated.")
+                logger.debug("IPC queue terminated.")
                 break
 
             # Over the queue, a module can either signal that it finished
