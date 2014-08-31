@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with exitmap.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import socket
 import threading
 import subprocess
@@ -26,97 +27,103 @@ logger = log.get_logger()
 
 
 class Command(object):
-    def __init__(self, torsocks_conf, queue, circ_id, origsock):
-        self.env = {
-            'TORSOCKS_CONF_FILE': torsocks_conf,
-            'TORSOCKS_LOG_LEVEL': '5',
-        }
 
-        self.command = ["/usr/local/bin/torsocks"]
+    """
+    Provide an abstraction for a shell command which is to be run.
+    """
+
+    def __init__(self, torsocks_conf, queue, circ_id, origsock):
+
+        os.environ["TORSOCKS_CONF_FILE"] = torsocks_conf
+        os.environ["TORSOCKS_LOG_LEVEL"] = "5"
+
         self.process = None
         self.stdout = None
         self.stderr = None
+        self.output_callback = None
         self.queue = queue
-        self._origsocket = origsock
+        self.origsocket = origsock
         self.circ_id = circ_id
-        self.pattern = "Connection on fd [0-9]+ originating " \
-                       "from [^:]+:([0-9]{1,5})"
 
-    def _invoke_process(self):
+    def invoke_process(self, command):
         """
-        Invoke the process and wait for it to finish.
+        Run the command and wait for it to finish.
 
         If a callback was specified, it is called with the process' output as
-        argument and together with a function which can be used to terminate
-        the process.
+        argument and with a function which can be used to kill the process.
         """
 
-        # Start process and redirect stderr to stdout.  That makes it much more
+        # Start process and redirect its stderr to stdout.  That makes it more
         # convenient for us to parse the output.
 
         self.process = subprocess.Popen(
-            self.command,
-            env=self.env,
+            command,
+            env=os.environ,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
         )
 
         if self.output_callback:
-            # Read the process' output line by line and pass it to the
-            # callback.
 
-            while True:
+            # Read the process' output line by line and pass it to the module's
+            # callback function.
+
+            keep_reading = True
+            while keep_reading:
+
                 line = self.process.stdout.readline().strip()
-
-                if not line:
-                    break
 
                 # Look for torsocks' source port before we pass the line on
                 # to the module.
 
-                port = util.extract_pattern(line, self.pattern)
+                pattern = "Connection on fd [0-9]+ originating " \
+                          "from [^:]+:([0-9]{1,5})"
+                port = util.extract_pattern(line, pattern)
 
-                if port is not None:
+                if port:
+
                     # socket.socket is probably monkey-patched.  We need,
                     # however, the original implementation.
 
                     tmpsock = socket.socket
-                    socket.socket = self._origsocket
+                    socket.socket = self.origsocket
                     self.queue.put([self.circ_id, ("127.0.0.1", int(port))])
                     socket.socket = tmpsock
 
-                self.output_callback(line, self.process.terminate)
+                keep_reading = self.output_callback(line, self.process.kill)
 
         # Wait for the process to finish.
 
         self.stdout, self.stderr = self.process.communicate()
 
     def execute(self, command, timeout=10, output_callback=None):
-        self.command += command
+        """
+        Run a shell command in a dedicated process.
+        """
+
+        command = ["torsocks"] + command
         self.output_callback = output_callback
 
         logger.debug("Invoking \"%s\" in environment \"%s\"" %
-                     (' '.join(self.command), str(self.env)))
+                     (" ".join(command), str(os.environ)))
 
-        thread = threading.Thread(target=self._invoke_process)
-        thread.setDaemon(1)
+        # We run the given command in a separate thread.  The main thread will
+        # kill the process if it does not finish before the given timeout.
+
+        thread = threading.Thread(target=self.invoke_process,
+                                  args=(command,))
+        thread.daemon = True
         thread.start()
         thread.join(timeout)
 
-        # Kill the process if it doesn't react.  With fire^Wterminate().
+        # Attempt to kill the process if it did not finish in time.
 
-        if thread.isAlive():
-            logger.debug("Terminating subprocess after waiting for more "
-                         "than %d seconds." % timeout)
-
-            try:
-                self.process.terminate()
-            except OSError as e:
-                logger.error(e)
-
+        if thread.is_alive():
+            logger.debug("Killing process after %d seconds." % timeout)
+            self.process.kill()
             thread.join()
 
-        return (self.stdout, self.stderr)
+        return self.stdout, self.stderr
 
 
 # Alias class name to provide more intuitive interface.
