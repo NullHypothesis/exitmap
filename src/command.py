@@ -71,7 +71,11 @@ class Command(object):
             keep_reading = True
             while keep_reading:
 
-                line = self.process.stdout.readline().strip()
+                line = self.process.stdout.readline()
+                if not line:
+                    break
+                else:
+                    line = line.strip()
 
                 # Look for torsocks' source port before we pass the line on
                 # to the module.
