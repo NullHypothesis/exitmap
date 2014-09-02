@@ -40,7 +40,7 @@ class Statistics(object):
 
     def update_circs(self, circ_event):
 
-        if circ_event.status in [CircStatus.FAILED, CircStatus.CLOSED]:
+        if circ_event.status in [CircStatus.FAILED]:
 
             logger.debug("Circuit failed because: %s" % str(circ_event.reason))
             self.failed_circuits += 1

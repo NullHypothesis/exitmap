@@ -33,7 +33,7 @@ import log
 logger = log.get_logger()
 
 
-def decorator(queue, orig_socket, module, *module_args):
+def decorator(queue, orig_socket, module, circ_id, *module_args):
 
     def wrapper():
 
@@ -44,7 +44,7 @@ def decorator(queue, orig_socket, module, *module_args):
             socket.socket = orig_socket
 
             logger.debug("Informing event handler that module finished.")
-            queue.put((None, None))
+            queue.put((circ_id, None))
 
             socket.socket = tmp_socket
         except KeyboardInterrupt:
@@ -54,8 +54,9 @@ def decorator(queue, orig_socket, module, *module_args):
 
 
 class EventHandler(object):
+
     """
-    Implement a handler for asynchronous Tor events.
+    Handles asynchronous Tor events.
 
     The handler processes only stream and circuit events.  New streams are
     attached to their corresponding circuits since exitmap's Tor process leaves
@@ -63,9 +64,6 @@ class EventHandler(object):
     """
 
     def __init__(self, controller, probing_module, stats):
-        """
-        Initialise an EventHandler object.
-        """
 
         self.stats = stats
         self.attachers = {}
@@ -151,11 +149,16 @@ class EventHandler(object):
                 break
 
             # Over the queue, a module can either signal that it finished
-            # execution (by sending (None,None)) or that it is ready to have
-            # its stream attached to a circuit (by sending (circuit
-            # id,sockname)).
+            # execution (by sending (circ_id,None)) or that it is ready to have
+            # its stream attached to a circuit (by sending (circ_id,sockname)).
 
-            if (circ_id is None) or (sockname is None):
+            if sockname is None:
+                logger.debug("Closing finished circuit %s." % circ_id)
+                try:
+                    self.controller.close_circuit(circ_id)
+                except stem.InvalidArguments as err:
+                    logger.debug("Could not close circuit because: %s" % err)
+
                 self.stats.finished_streams += 1
                 self.stats.print_progress()
                 self.check_finished()
@@ -221,7 +224,7 @@ class EventHandler(object):
         cmd = command.Command("doc/torsocks.conf", self.queue, circ_event.id,
                               self.origsock)
         func = decorator(self.queue, self.origsock, self.probing_module,
-                         exit_fpr, cmd)
+                         circ_event.id, exit_fpr, cmd)
 
         # Monkey-patch the socket API to redirect network traffic originating
         # from our Python process to Tor's SOCKS port.
