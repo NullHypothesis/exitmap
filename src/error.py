@@ -19,5 +19,6 @@
 class ExitSelectionError(Exception):
     pass
 
+
 class PathSelectionError(Exception):
     pass

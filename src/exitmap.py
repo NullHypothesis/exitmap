@@ -16,7 +16,6 @@
 # along with exitmap.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import sys
 import time
 import socket
 import pkgutil
@@ -316,4 +315,4 @@ def run_module(module_name, args, controller, stats):
             time.sleep(args.build_delay)
 
     logger.info("Done triggering circuit creations after %s." %
-                 str(datetime.datetime.now() - before))
+                str(datetime.datetime.now() - before))

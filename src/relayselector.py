@@ -76,7 +76,8 @@ def get_fingerprints(consensus, exclude=[]):
 def get_exits(consensus, country_code=None, bad_exit=False,
               version=None, nickname=None, address=None, hosts=[]):
 
-    # try to find descriptors for the exit policy
+    # Try to find descriptors for the exit policy.
+
     cached_descriptors = {}
     cached_descriptors_path = os.path.join(os.path.dirname(consensus),
                                            "cached-descriptors")
@@ -86,12 +87,14 @@ def get_exits(consensus, country_code=None, bad_exit=False,
 
     all_exits = [desc for desc in stem.descriptor.parse_file(consensus)
                  if stem.Flag.EXIT in desc.flags]
-    exits = list(all_exits)  # exits that match our given criteria
+    exits = list(all_exits)
 
     if hosts:
         def can_exit_to(desc):
             for (ip, port) in hosts:
-                # check if we have the full policy
+
+                # Check if we have the full policy.
+
                 e = cached_descriptors.get(desc.fingerprint, None)
                 if e:
                     if e.exit_policy.can_exit_to(ip, port):
@@ -99,7 +102,8 @@ def get_exits(consensus, country_code=None, bad_exit=False,
                     else:
                         continue
 
-                # use the summary from the consensus
+                # Use the summary from the consensus.
+
                 if desc.exit_policy.can_exit_to(ip, port):
                     return True
 
