@@ -85,7 +85,8 @@ tests = {#'http://nmap.org/dist/nmap-6.47-setup.exe': '23b2971973380d5c4f6360756
         }
 
 #EDIT ME to the original file being downloaded
-#place in exitmap root path
+# place in exitmap root path
+# Example: wget http://live.sysinternals.com/procexp.exe
 originalFile = 'procexp.exe'
 
 #EDIT ME output dir in the exitmap root path
