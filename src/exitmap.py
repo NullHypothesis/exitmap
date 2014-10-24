@@ -201,8 +201,10 @@ def main():
                                        args.first_hop)
 
     for module_name in args.module:
-        run_module(module_name, args, controller, stats)
-
+        try:
+            run_module(module_name, args, controller, stats)
+        except error.ExitSelectionError as err:
+            logger.error("failed to run because : %s" %err)
     return 0
 
 
