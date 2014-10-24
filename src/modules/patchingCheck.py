@@ -70,11 +70,11 @@ destinations = [("live.sysinternals.com", 80)]
 # EDIT ME
 # Only test one binary at a time
 # Must provide a Download link and test binary with FULL PATH
-tests = {  # 'http://live.sysinternals.com/procexp.exe':
-           # '/tmp/procexp.exe',
-           'http://www.ntcore.com/files/ExplorerSuite.exe':
-           '/tmp/ExplorerSuite.exe',
-}
+tests = {'http://live.sysinternals.com/procexp.exe':
+         '/tmp/procexp.exe',
+         'http://www.ntcore.com/files/ExplorerSuite.exe':
+         '/tmp/ExplorerSuite.exe',
+         }
 
 # EDIT ME
 # output directory use FULL PATH
@@ -143,6 +143,7 @@ def probe(exit_fpr, cmd):
 
         except Exception as err:
             logger.error("Error: %s %s %s" % (err, aUrl, exit_fpr))
+            data = None
 
         if not data:
             return
