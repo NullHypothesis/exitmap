@@ -68,6 +68,7 @@ To get an overview of `exitmap`'s options, execute:
   [check](https://check.torproject.org) service.
 * `dns`: Attempts to resolve several domains and compares the received A
   records to the expected records.
+* `patchingCheck`: Checks for file tampering.
 
 Configuration
 -------------
