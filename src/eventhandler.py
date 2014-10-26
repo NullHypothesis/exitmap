@@ -63,12 +63,12 @@ class EventHandler(object):
     new streams unattached.
     """
 
-    def __init__(self, controller, probing_module, stats):
+    def __init__(self, controller, module, stats):
 
         self.stats = stats
         self.attachers = {}
         self.controller = controller
-        self.probing_module = probing_module
+        self.module = module
         self.origsock = socket.socket
         self.manager = multiprocessing.Manager()
         self.queue = self.manager.Queue()
@@ -198,6 +198,11 @@ class EventHandler(object):
                 logger.debug("Terminating remaining PID %d." % proc.pid)
                 proc.terminate()
 
+            if hasattr(self.module, "teardown"):
+                logger.debug("Calling module's teardown() function.")
+                socket.socket = self.origsock
+                self.module.teardown()
+
             logger.info(self.stats)
             sys.exit(0)
 
@@ -223,7 +228,7 @@ class EventHandler(object):
 
         cmd = command.Command("doc/torsocks.conf", self.queue, circ_event.id,
                               self.origsock)
-        func = decorator(self.queue, self.origsock, self.probing_module,
+        func = decorator(self.queue, self.origsock, self.module.probe,
                          circ_event.id, exit_fpr, cmd)
 
         # Monkey-patch the socket API to redirect network traffic originating

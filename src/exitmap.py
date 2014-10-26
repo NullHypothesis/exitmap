@@ -267,6 +267,12 @@ def run_module(module_name, args, controller, stats):
         logger.error("Failed to load module because: %s" % err)
         return
 
+    # Let module perform one-off setup tasks.
+
+    if hasattr(module, "setup"):
+        logger.debug("Calling module's setup() function.")
+        module.setup()
+
     exit_relays = select_exits(args, module)
 
     count = len(exit_relays)
@@ -276,7 +282,7 @@ def run_module(module_name, args, controller, stats):
         raise error.ExitSelectionError("Exit selection yielded %d exits "
                                        "but need at least one." % count)
 
-    handler = EventHandler(controller, module.probe, stats)
+    handler = EventHandler(controller, module, stats)
     controller.add_event_listener(handler.new_event,
                                   EventType.CIRC, EventType.STREAM)
 
@@ -284,10 +290,20 @@ def run_module(module_name, args, controller, stats):
                  "total delay of %.3f seconds." % (args.build_delay,
                                                    count * args.build_delay))
 
-    before = datetime.datetime.now()
     logger.debug("Beginning to trigger %d circuit creation(s)." % count)
+
+    iter_exit_relays(exit_relays, controller, stats, args)
+
+
+def iter_exit_relays(exit_relays, controller, stats, args):
+    """
+    Invoke circuits for all selected exit relays.
+    """
+
+    before = datetime.datetime.now()
     consensus = util.get_consensus_path(args)
     fingerprints = relayselector.get_fingerprints(consensus)
+    count = len(exit_relays)
 
     # Start building a circuit for every exit relay we got.
 
