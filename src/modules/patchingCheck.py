@@ -50,11 +50,11 @@ Then run:
 
 """
 
-import urllib2
 import os
+import urllib2
+import tempfile
 import log
 import hashlib
-import shutil
 
 logger = log.get_logger()
 
@@ -70,116 +70,150 @@ destinations = [("live.sysinternals.com", 80)]
 # EDIT ME
 # Only test one binary at a time
 # Must provide a Download link and test binary with FULL PATH
-tests = {'http://live.sysinternals.com/procexp.exe':
-         '/tmp/procexp.exe',
-         'http://www.ntcore.com/files/ExplorerSuite.exe':
-         '/tmp/ExplorerSuite.exe',
-         }
+check_files = {
+    "http://live.sysinternals.com/procexp.exe": [None, None],
+    # "http://www.ntcore.com/files/ExplorerSuite.exe": [None, None]
+}
 
-# EDIT ME
-# output directory use FULL PATH
-testDir = '/tmp/test/'
 
 #######################
 # EDIT ME SECTION END
 #######################
 
+def setup():
+    """
+    Perform one-off setup tasks, i.e., download reference files.
+    """
 
-def sha512_for_file(filename, block_size=2 ** 20):
-    sha = hashlib.sha512()
-    with open(filename, 'rb') as f:
-        for chunk in iter(lambda: f.read(128 * sha.block_size), b''):
-            sha.update(chunk)
-    return sha.hexdigest()
+    logger.info("Creating temporary reference files.")
+
+    for url, _ in check_files.iteritems():
+
+        logger.debug("Attempting to download <%s>." % url)
+
+        try:
+            data = urllib2.urlopen(url).read()
+        except Exception as err:
+            logger.warning("urlopen() failed: %s" % err)
+
+        file_name = url.split("/")[-1]
+        _, tmp_file = tempfile.mkstemp(prefix="exitmap_%s_" % file_name)
+
+        with open(tmp_file, "wb") as fd:
+            fd.write(data)
+
+        logger.debug("Wrote file to \"%s\"." % tmp_file)
+
+        check_files[url] = [tmp_file, sha512_file(tmp_file)]
 
 
-def check_binary_for_matching(bin1, bin2):
-    '''
-    bin1 is the original file
-    return False if the files are different
-    return True if the same file until EOF
-    '''
+def teardown():
+    """
+    Perform one-off teardown tasks, i.e., remove reference files.
+    """
 
-    if os.path.getsize(bin2) < os.path.getsize(bin1):
-        with open(bin2, 'r+b') as binary2:
-            with open(bin1, 'r+b') as binary1:
-                total_count = 0
-                while True:
-                    # 512 blocksize
-                    block_size = 2 ** 9
-                    tempBlock1 = binary1.read(block_size)
-                    tempBlock2 = binary2.read(block_size)
-                    if len(tempBlock2) < len(tempBlock1):
-                        return True
-                    elif tempBlock1 != tempBlock2:
-                        # something is different so we save it
-                        logger.info("This is a smaller file, found "
-                                    "a difference %s bytes in."
-                                    % hex(total_count))
-                        return False
-                    total_count += block_size
-    else:
-        # file is larger so we save it
+    logger.info("Removing reference files.")
+
+    for _, file_info in check_files.iteritems():
+
+        orig_file, _ = file_info
+        logger.info("Removing file \"%s\"." % orig_file)
+        os.remove(orig_file)
+
+
+def sha512_file(file_name):
+    """
+    Calculate SHA512 over the given file.
+    """
+
+    hash_func = hashlib.sha256()
+
+    with open(file_name, "rb") as fd:
+        hash_func.update(fd.read())
+
+    return hash_func.hexdigest()
+
+
+def files_identical(observed_file, original_file):
+    """
+    Return True if the files are identical and False otherwise.
+
+    This check is necessary because sometimes file transfers are terminated
+    before they are finished and we are left with an incomplete file.
+    """
+
+    observed_length = os.path.getsize(observed_file)
+    original_length = os.path.getsize(original_file)
+
+    if observed_length >= original_length:
         return False
 
+    with open(original_file) as fd:
+        original_data = fd.read(observed_length)
 
-def probe(exit_fpr, cmd):
+    with open(observed_file) as fd:
+        observed_data = fd.read()
+
+    return original_data == observed_data
+
+
+def exiturl(exit_fpr):
+    """
+    Return an Atlas link for the exit relay fingerprint.
+    """
+
+    return "<https://atlas.torproject.org/#details/%s>" % exit_fpr
+
+
+def probe(exit_fpr, _):
     """
     Probe the given exit relay and look for modified binaries.
     """
 
-    if not os.path.exists(testDir):
-        os.makedirs(testDir)
+    logger.debug("Now probing exit relay %s." % exiturl(exit_fpr))
 
-    logger.debug("Now probing exit relay "
-                 "<https://globe.torproject.org/#/relay/%s>." % exit_fpr)
 
-    data = None
+    for url, file_info in check_files.iteritems():
 
-    for aUrl, originalFile in tests.iteritems():
-        aHash = sha512_for_file(originalFile)
+        orig_file, orig_digest = file_info
+
+        logger.debug("Attempting to download <%s> over %s." %
+                     (url, exiturl(exit_fpr)))
+
+        data = None
         try:
-            data = urllib2.urlopen(aUrl, timeout=20).read()
-
+            data = urllib2.urlopen(url, timeout=20).read()
         except Exception as err:
-            logger.error("Error: %s %s %s" % (err, aUrl, exit_fpr))
-            data = None
+            logger.warning("urlopen() failed for %s: %s" %
+                           (exiturl(exit_fpr), err))
+            continue
 
         if not data:
-            return
+            logger.warning("No data received from <%s> over %s." %
+                           (url, exiturl(exit_fpr)))
+            continue
 
-        tmpFile = "/tmp/" + str(aUrl.replace('/', '')) + str(exit_fpr)
+        file_name = url.split("/")[-1]
+        _, tmp_file = tempfile.mkstemp(prefix="exitmap_%s_%s_" %
+                                       (exit_fpr, file_name))
 
-        with open(tmpFile, 'wb') as f:
-            f.write(data)
+        with open(tmp_file, "wb") as fd:
+            fd.write(data)
 
-        tempHash = sha512_for_file(tmpFile)
+        observed_digest = sha512_file(tmp_file)
 
-        if tempHash != aHash:
+        if (observed_digest != orig_digest) and \
+           (not files_identical(tmp_file, orig_file)):
 
-            # check_binary_for_matching returns False if the file is greater
-            # than original or if the file is smaller and modified
-            binCheck = check_binary_for_matching(originalFile, tmpFile)
+            logger.critical("File \"%s\" differs from reference file \"%s\".  "
+                            "Downloaded over exit relay %s." %
+                            (tmp_file, orig_file, exiturl(exit_fpr)))
 
-            if binCheck is False:
-                logger.error("Detected false negative for "
-                             "<https://globe.torproject.org/#/relay/%s %s>. "
-                             "Saving file." % (exit_fpr, aUrl))
-
-                # save file strip slashes from URL
-                newFile = testDir.rstrip('/') + '/' + str(exit_fpr) + "_" \
-                                              + str(aUrl.replace('/', ''))
-
-                shutil.copyfile(tmpFile, newFile)
-            else:
-                logger.info("File %s was truncated by %s, discarding file" %
-                            (aUrl, exit_fpr))
         else:
-            logger.debug("Exit relay "
-                         "<https://globe.torproject.org/#/relay/%s> "
-                         "passed the check test." % exit_fpr)
+            logger.debug("File \"%s\" fetched over %s as expected." %
+                         (tmp_file, exiturl(exit_fpr)))
 
-        os.remove(tmpFile)
+            os.remove(tmp_file)
 
 
 def main():
@@ -187,7 +221,9 @@ def main():
     Entry point when invoked over the command line.
     """
 
-    probe("n/a", None)
+    setup()
+    probe("dummy", None)
+    teardown()
 
     return 0
 
