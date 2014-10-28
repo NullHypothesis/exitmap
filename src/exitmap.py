@@ -102,11 +102,15 @@ def parse_cmd_args():
         config_file = os.path.join(home_dir, ".exitmaprc")
 
     config_parser = ConfigParser.SafeConfigParser()
-    config_parser.read([config_file])
-    try:
-        defaults = dict(config_parser.items("Defaults"))
-    except ConfigParser.NoSectionError as err:
-        logger.warning("Could not parse config file: %s" % err)
+    file_parsed = config_parser.read([config_file])
+    if file_parsed:
+        try:
+            defaults = dict(config_parser.items("Defaults"))
+        except ConfigParser.NoSectionError as err:
+            logger.warning("Could not parse config file \"%s\": %s" %
+                           (config_file, err))
+            defaults = {}
+    else:
         defaults = {}
 
     parser = argparse.ArgumentParser(parents=[parser])
