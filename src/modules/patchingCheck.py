@@ -70,8 +70,8 @@ destinations = [("live.sysinternals.com", 80)]
 # Only test one binary at a time
 # Must provide a Download link
 check_files = {
-    "http://live.sysinternals.com/procexp.exe": [None, None],
-    # "http://www.ntcore.com/files/ExplorerSuite.exe": [None, None],
+    "http://live.sysinternals.com/psexec.exe": [None, None],
+    #"http://www.ntcore.com/files/ExplorerSuite.exe": [None, None],
 }
 
 # Set UserAgent
@@ -186,8 +186,13 @@ def probe(exit_fpr, _):
                      (url, exiturl(exit_fpr)))
 
         data = None
+
+        request = urllib2.Request(url)
+        request.add_header('User-Agent', test_agent)
+
         try:
-            data = urllib2.urlopen(url, timeout=20).read()
+            #data = urllib2.urlopen(request).read()
+            data = urllib2.urlopen(request, timeout=20).read()
         except Exception as err:
             logger.warning("urlopen() failed for %s: %s" %
                            (exiturl(exit_fpr), err))
