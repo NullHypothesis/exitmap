@@ -67,18 +67,21 @@ logger = log.get_logger()
 
 destinations = [("live.sysinternals.com", 80)]
 
-# EDIT ME
 # Only test one binary at a time
-# Must provide a Download link and test binary with FULL PATH
+# Must provide a Download link
 check_files = {
     "http://live.sysinternals.com/procexp.exe": [None, None],
-    # "http://www.ntcore.com/files/ExplorerSuite.exe": [None, None]
+    # "http://www.ntcore.com/files/ExplorerSuite.exe": [None, None],
 }
 
+# Set UserAgent
+# Reference: http://www.useragentstring.com/pages/Internet%20Explorer/
+test_agent = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)'
 
 #######################
 # EDIT ME SECTION END
 #######################
+
 
 def setup():
     """
@@ -91,8 +94,11 @@ def setup():
 
         logger.debug("Attempting to download <%s>." % url)
 
+        request = urllib2.Request(url)
+        request.add_header('User-Agent', test_agent)
+
         try:
-            data = urllib2.urlopen(url).read()
+            data = urllib2.urlopen(request).read()
         except Exception as err:
             logger.warning("urlopen() failed: %s" % err)
 
@@ -171,7 +177,6 @@ def probe(exit_fpr, _):
     """
 
     logger.debug("Now probing exit relay %s." % exiturl(exit_fpr))
-
 
     for url, file_info in check_files.iteritems():
 
