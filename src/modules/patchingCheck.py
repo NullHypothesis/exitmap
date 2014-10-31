@@ -191,7 +191,6 @@ def probe(exit_fpr, _):
         request.add_header('User-Agent', test_agent)
 
         try:
-            #data = urllib2.urlopen(request).read()
             data = urllib2.urlopen(request, timeout=20).read()
         except Exception as err:
             logger.warning("urlopen() failed for %s: %s" %
