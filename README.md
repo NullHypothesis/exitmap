@@ -14,7 +14,7 @@ reliability and trustworthiness of exit relays.
 all given exit relays and as soon as `tor` notifies `exitmap` of an established
 circuit, a module is invoked for the newly established circuit.
 
-`exitmap` has been used to check for false positives on the Tor Project's
+`exitmap` has been used to check for false negatives on the Tor Project's
 [check](https://check.torproject.org) service and to find [malicious exit
 relays](http://www.cs.kau.se/philwint/spoiled_onions).  It is quite easy to
 develop new modules for `exitmap`; just have a look at the file HACKING in the
@@ -64,7 +64,7 @@ To get an overview of `exitmap`'s options, execute:
 * `testfds`: Tests if an exit relay is able to fetch the content of a simple
   web page.  If an exit relay is unable to do that, it might not have enough
   file descriptors available.
-* `checktest`: Attempts to find false positives in the Tor Project's
+* `checktest`: Attempts to find false negatives in the Tor Project's
   [check](https://check.torproject.org) service.
 * `dns`: Attempts to resolve several domains and compares the received A
   records to the expected records.
