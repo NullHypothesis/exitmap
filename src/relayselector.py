@@ -24,7 +24,10 @@ import argparse
 import stem
 import stem.descriptor
 
+import log
 import ip2loc
+
+logger = log.get_logger()
 
 
 def parse_cmd_args():
@@ -85,9 +88,16 @@ def get_exits(consensus, country_code=None, bad_exit=False,
         for desc in stem.descriptor.parse_file(cached_descriptors_path):
             cached_descriptors[desc.fingerprint] = desc
 
-    all_exits = [desc for desc in stem.descriptor.parse_file(consensus)
-                 if stem.Flag.EXIT in desc.flags]
-    exits = list(all_exits)
+    have_exit_policy = [desc for desc in stem.descriptor.parse_file(consensus)
+                        if desc.exit_policy.is_exiting_allowed()]
+
+    have_no_exit_flag = [desc for desc in have_exit_policy
+                         if stem.Flag.EXIT not in desc.flags]
+
+    logger.info("%d relays have non-empty exit policy but no exit flag." %
+                len(have_no_exit_flag))
+
+    exits = list(have_exit_policy)
 
     if hosts:
         def can_exit_to(desc):
@@ -127,7 +137,7 @@ def get_exits(consensus, country_code=None, bad_exit=False,
     if version:
         exits = filter(lambda desc: str(desc.version) == version, exits)
 
-    return (len(all_exits), [desc.fingerprint for desc in exits])
+    return (len(have_exit_policy), [desc.fingerprint for desc in exits])
 
 
 def main():
