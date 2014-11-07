@@ -18,7 +18,7 @@
 # along with exitmap.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Module to detect false positives for https://check.torproject.org.
+Module to detect false negatives for https://check.torproject.org.
 """
 
 import urllib2
@@ -35,7 +35,7 @@ destinations = [("check.torproject.org", 443)]
 
 def probe(exit_fpr, cmd):
     """
-    Probe the given exit relay and look for check.tp.o false positives.
+    Probe the given exit relay and look for check.tp.o false negatives.
     """
 
     logger.debug("Now probing exit relay "
