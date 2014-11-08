@@ -21,18 +21,7 @@ import os
 from stem.descriptor.reader import DescriptorReader
 
 
-def get_consensus_path(args):
-
-    # If no consensus was given over the command line, we take the one in the
-    # data directory.
-
-    if args.consensus:
-        return args.consensus
-    else:
-        return os.path.join(args.temp_dir, "cached-consensus")
-
-
-def relay_in_consensus(fingerprint, consensus):
+def relay_in_consensus(fingerprint, cached_consensus_path):
     """
     Check if a relay is part of the consensus.
 
@@ -42,7 +31,7 @@ def relay_in_consensus(fingerprint, consensus):
 
     fingerprint = fingerprint.upper()
 
-    with DescriptorReader(consensus) as reader:
+    with DescriptorReader(cached_consensus_path) as reader:
         for descriptor in reader:
             if descriptor.fingerprint == fingerprint:
                 return True

@@ -44,8 +44,8 @@ def parse_cmd_args():
     parser.add_argument("-c", "--countrycode", type=str, default=None,
                         help="Two-letter country code to select.")
 
-    parser.add_argument("-d", "--consensus", type=str, default=None,
-                        help="Consensus document containing relays.")
+    parser.add_argument("-d", "--data-dir", type=str, default=None,
+                        help="Tor's data directory.")
 
     parser.add_argument("-v", "--version", type=str, default=None,
                         help="Show relays with a specific version.")
@@ -60,7 +60,7 @@ def parse_cmd_args():
     return parser.parse_args()
 
 
-def get_fingerprints(consensus, exclude=[]):
+def get_fingerprints(cached_consensus_path, exclude=[]):
     """
     Get all relay fingerprints in the provided consensus.
 
@@ -69,81 +69,99 @@ def get_fingerprints(consensus, exclude=[]):
 
     fingerprints = []
 
-    for desc in stem.descriptor.parse_file(consensus):
+    for desc in stem.descriptor.parse_file(cached_consensus_path):
         if desc.fingerprint not in exclude:
             fingerprints.append(desc.fingerprint)
 
     return fingerprints
 
 
-def get_exits(consensus, country_code=None, bad_exit=False,
+def get_exits(data_dir, country_code=None, bad_exit=False,
               version=None, nickname=None, address=None, hosts=[]):
 
-    # Try to find descriptors for the exit policy.
+    cached_consensus = {}
+    have_exit_policy = {}
+    have_exit_flag = {}
 
-    cached_descriptors = {}
-    cached_descriptors_path = os.path.join(os.path.dirname(consensus),
-                                           "cached-descriptors")
-    if os.path.exists(cached_descriptors_path):
+    cached_consensus_path = os.path.join(data_dir, "cached-consensus")
+    cached_descriptors_path = os.path.join(data_dir, "cached-descriptors")
+
+    # First, read the file "cached_descriptors" in order to get the full exit
+    # policy of all relays instead of just the summary which might be
+    # insufficient.
+
+    try:
         for desc in stem.descriptor.parse_file(cached_descriptors_path):
-            cached_descriptors[desc.fingerprint] = desc
+            if desc.exit_policy.is_exiting_allowed():
+                have_exit_policy[desc.fingerprint] = desc
+    except IOError as err:
+        logger.critical("File \"%s\" could not be read: %s" %
+                        (cached_descriptors_path, err))
+        sys.exit(1)
 
-    have_exit_policy = [desc for desc in stem.descriptor.parse_file(consensus)
-                        if desc.exit_policy.is_exiting_allowed()]
+    exit_candidates = list(have_exit_policy.values())
 
-    have_no_exit_flag = [desc for desc in have_exit_policy
-                         if stem.Flag.EXIT not in desc.flags]
+    # Now, also read the file "cached_consensus" to see which relays got the
+    # "Exit" flag from the directory authorities.
 
+    try:
+        for desc in stem.descriptor.parse_file(cached_consensus_path):
+            cached_consensus[desc.fingerprint] = desc
+            if stem.Flag.EXIT in desc.flags:
+                have_exit_flag[desc.fingerprint] = desc
+    except IOError as err:
+        logger.critical("File \"%s\" could not be read: %s" %
+                        (cached_descriptors_path, err))
+        sys.exit(1)
+
+    set_diff = set(have_exit_policy.keys()) - set(have_exit_flag.keys())
     logger.info("%d relays have non-empty exit policy but no exit flag." %
-                len(have_no_exit_flag))
-
-    exits = list(have_exit_policy)
+                len(set_diff))
 
     if hosts:
         def can_exit_to(desc):
-            for (ip, port) in hosts:
+            for (ip_addr, port) in hosts:
 
-                # Check if we have the full policy.
+                # Use the full exit policy for the given descriptor.
 
-                e = cached_descriptors.get(desc.fingerprint, None)
-                if e:
-                    if e.exit_policy.can_exit_to(ip, port):
-                        return True
-                    else:
-                        continue
+                desc = have_exit_policy.get(desc.fingerprint, None)
+                assert desc
+                if not desc.exit_policy.can_exit_to(ip_addr, port):
+                    return False
 
-                # Use the summary from the consensus.
+            return True
 
-                if desc.exit_policy.can_exit_to(ip, port):
-                    return True
-
-            return False
-
-        exits = filter(can_exit_to, exits)
+        exit_candidates = filter(can_exit_to, exit_candidates)
 
     if address:
-        exits = filter(lambda desc: address == desc.address, exits)
+        exit_candidates = filter(lambda desc: address == desc.address,
+                                 exit_candidates)
 
     if nickname:
-        exits = filter(lambda desc: nickname == desc.nickname, exits)
+        exit_candidates = filter(lambda desc: nickname == desc.nickname,
+                                 exit_candidates)
 
     if bad_exit:
-        exits = filter(lambda desc: stem.Flag.BADEXIT in desc.flags, exits)
+        exit_candidates = filter(lambda desc: stem.Flag.BADEXIT in
+                                 cached_consensus[desc.fingerprint].flags,
+                                 exit_candidates)
 
     if country_code:
-        exits = filter(lambda desc:
-                       ip2loc.resolve(desc.address) == country_code, exits)
+        exit_candidates = filter(lambda desc: ip2loc.resolve(desc.address) ==
+                                 country_code, exit_candidates)
 
     if version:
-        exits = filter(lambda desc: str(desc.version) == version, exits)
+        exit_candidates = filter(lambda desc: str(desc.tor_version) == version,
+                                 exit_candidates)
 
-    return (len(have_exit_policy), [desc.fingerprint for desc in exits])
+    return (len(have_exit_policy),
+            [desc.fingerprint for desc in exit_candidates])
 
 
 def main():
     args = parse_cmd_args()
 
-    _, exits = get_exits(args.consensus, args.countrycode, args.badexit,
+    _, exits = get_exits(args.data_dir, args.countrycode, args.badexit,
                          args.version, args.nickname, args.address)
     for e in exits:
         print("https://atlas.torproject.org/#details/%s" % e)
