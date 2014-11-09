@@ -122,10 +122,10 @@ def get_exits(consensus, country_code=None, bad_exit=False,
         exits = filter(can_exit_to, exits)
 
     if address:
-        exits = filter(lambda desc: address == desc.address, exits)
+        exits = filter(lambda desc: address in desc.address, exits)
 
     if nickname:
-        exits = filter(lambda desc: nickname == desc.nickname, exits)
+        exits = filter(lambda desc: nickname in desc.nickname, exits)
 
     if bad_exit:
         exits = filter(lambda desc: stem.Flag.BADEXIT in desc.flags, exits)

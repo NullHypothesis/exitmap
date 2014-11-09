@@ -15,7 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with exitmap.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
+import json
+import urllib2
+
 import geoip
+import log
+
+logger = log.get_logger()
 
 
 def binary_search(begin, ip, end):
@@ -40,3 +47,41 @@ def resolve(ip):
 
     return binary_search(0, int(d1) << 24 | int(d2) << 16 |
                          int(d3) << 8 | int(d4), len(geoip.db) - 1)
+
+def country(country_code):
+
+    host = {}
+    country_code = country_code.lower()
+
+    onionoo_url = "https://onionoo.torproject.org/details?country="
+
+    logger.info("Attempting to fetch all relays with country code \"%s\" "
+                "from Onionoo." % country_code)
+
+    try:
+        data = urllib2.urlopen("%s%s" % (onionoo_url, country_code)).read()
+    except Exception as err:
+        logger.warning("urlopen() failed: %s" % err)
+        sys.exit(1)
+
+    import pprint
+    response = json.loads(data)
+    relays = response["relays"]
+
+    for relay in relays:
+        print relay["fingerprint"]
+
+
+    #pprint.pprint(response["relays"])
+    return None
+
+    for relay in xrange(len(response["relays"])):
+        iplist= response['relays'][int(i)]['or_addresses']
+        for e in iplist:
+            try:
+                ip, port = e.split(':')
+                host[ip] = port
+            except: #probably ipv6 or not an IP address
+                print "probably ipv6 skipping.."
+
+    return host
