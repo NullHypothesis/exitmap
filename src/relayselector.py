@@ -130,12 +130,18 @@ def get_exits(consensus, country_code=None, bad_exit=False,
     if bad_exit:
         exits = filter(lambda desc: stem.Flag.BADEXIT in desc.flags, exits)
 
-    if country_code:
-        exits = filter(lambda desc:
-                       ip2loc.resolve(desc.address) == country_code, exits)
-
     if version:
         exits = filter(lambda desc: str(desc.version) == version, exits)
+
+    if country_code:
+
+        # Get fingerprint of all relays in desired country.
+
+        relay_fprs = ip2loc.get_relays_in_country(country_code)
+
+        all_exit_fprs = [desc.fingerprint for desc in exits]
+        exit_fprs = filter(lambda fpr: fpr in all_exit_fprs, relay_fprs)
+        return len(exit_fprs), exit_fprs
 
     return (len(have_exit_policy), [desc.fingerprint for desc in exits])
 

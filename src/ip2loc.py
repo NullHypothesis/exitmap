@@ -48,11 +48,16 @@ def resolve(ip):
     return binary_search(0, int(d1) << 24 | int(d2) << 16 |
                          int(d3) << 8 | int(d4), len(geoip.db) - 1)
 
-def country(country_code):
 
-    host = {}
+def get_relays_in_country(country_code):
+    """
+    Return a list of the fingerprint of all relays in the given country code.
+
+    The fingerprints are obtained by querying Onionoo.  In case of an error, an
+    empty list is returned.
+    """
+
     country_code = country_code.lower()
-
     onionoo_url = "https://onionoo.torproject.org/details?country="
 
     logger.info("Attempting to fetch all relays with country code \"%s\" "
@@ -62,26 +67,16 @@ def country(country_code):
         data = urllib2.urlopen("%s%s" % (onionoo_url, country_code)).read()
     except Exception as err:
         logger.warning("urlopen() failed: %s" % err)
-        sys.exit(1)
+        return []
 
-    import pprint
-    response = json.loads(data)
-    relays = response["relays"]
+    try:
+        response = json.loads(data)
+    except ValueError as err:
+        logger.warning("json.loads() failed: %s" % err)
+        return []
 
-    for relay in relays:
-        print relay["fingerprint"]
+    fingerprints = [desc["fingerprint"] for desc in response["relays"]]
 
+    logger.info("Onionoo gave us %d fingerprints." % len(fingerprints))
 
-    #pprint.pprint(response["relays"])
-    return None
-
-    for relay in xrange(len(response["relays"])):
-        iplist= response['relays'][int(i)]['or_addresses']
-        for e in iplist:
-            try:
-                ip, port = e.split(':')
-                host[ip] = port
-            except: #probably ipv6 or not an IP address
-                print "probably ipv6 skipping.."
-
-    return host
+    return fingerprints
