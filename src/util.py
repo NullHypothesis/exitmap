@@ -17,8 +17,14 @@
 
 import re
 import os
+import urllib2
+import json
 
 from stem.descriptor.reader import DescriptorReader
+
+import log
+
+logger = log.get_logger()
 
 
 def get_consensus_path(args):
@@ -73,3 +79,37 @@ def extract_pattern(line, pattern):
         return match.group(1)
 
     return None
+
+
+def get_relays_in_country(country_code):
+    """
+    Return a list of the fingerprint of all relays in the given country code.
+
+    The fingerprints are obtained by querying Onionoo.  In case of an error, an
+    empty list is returned.
+    """
+
+    country_code = country_code.lower()
+    onionoo_url = "https://onionoo.torproject.org/details?country="
+
+    logger.info("Attempting to fetch all relays with country code \"%s\" "
+                "from Onionoo." % country_code)
+
+    try:
+        data = urllib2.urlopen("%s%s" % (onionoo_url, country_code)).read()
+    except Exception as err:
+        logger.warning("urlopen() failed: %s" % err)
+        return []
+
+    try:
+        response = json.loads(data)
+    except ValueError as err:
+        logger.warning("json.loads() failed: %s" % err)
+        return []
+
+    fingerprints = [desc["fingerprint"] for desc in response["relays"]]
+
+    logger.info("Onionoo gave us %d (exit and non-exit) fingerprints." %
+                len(fingerprints))
+
+    return fingerprints

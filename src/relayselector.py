@@ -25,7 +25,7 @@ import stem
 import stem.descriptor
 
 import log
-import ip2loc
+import util
 
 logger = log.get_logger()
 
@@ -137,7 +137,7 @@ def get_exits(consensus, country_code=None, bad_exit=False,
 
         # Get fingerprint of all relays in desired country.
 
-        relay_fprs = ip2loc.get_relays_in_country(country_code)
+        relay_fprs = util.get_relays_in_country(country_code)
 
         all_exit_fprs = [desc.fingerprint for desc in exits]
         exit_fprs = filter(lambda fpr: fpr in all_exit_fprs, relay_fprs)
