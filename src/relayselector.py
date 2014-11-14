@@ -99,8 +99,6 @@ def get_exits(data_dir, country_code=None, bad_exit=False,
                         (cached_descriptors_path, err))
         sys.exit(1)
 
-    exit_candidates = list(have_exit_policy.values())
-
     # Now, also read the file "cached_consensus" to see which relays got the
     # "Exit" flag from the directory authorities.
 
@@ -113,6 +111,14 @@ def get_exits(data_dir, country_code=None, bad_exit=False,
         logger.critical("File \"%s\" could not be read: %s" %
                         (cached_descriptors_path, err))
         sys.exit(1)
+
+    # Drop all exit relays for which we have a descriptor but which did not
+    # make it into the consensus.
+
+    have_exit_policy = {fpr: desc for fpr, desc in have_exit_policy.iteritems()
+                        if fpr in cached_consensus}
+
+    exit_candidates = list(have_exit_policy.values())
 
     set_diff = set(have_exit_policy.keys()) - set(have_exit_flag.keys())
     logger.info("%d relays have non-empty exit policy but no exit flag." %
