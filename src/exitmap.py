@@ -128,9 +128,6 @@ def parse_cmd_args():
                        help="Only probe the exit relay which has the given "
                             "20-byte fingerprint.")
 
-    parser.add_argument("-c", "--consensus", type=str, default="",
-                        help="Path to a Tor network consensus.")
-
     parser.add_argument("-d", "--build-delay", type=float, default=3,
                         help="Wait for the given delay (in seconds) between "
                              "circuit builds.  The default is 3.")
@@ -197,9 +194,9 @@ def main():
 
     controller.set_conf("FetchServerDescriptors", "0")
 
-    if args.first_hop and \
-       (not util.relay_in_consensus(args.first_hop,
-                                    util.get_consensus_path(args))):
+    cached_consensus_path = os.path.join(args.temp_dir, "cached-consensus")
+    if args.first_hop and (not util.relay_in_consensus(args.first_hop,
+                                                       cached_consensus_path)):
         raise error.PathSelectionError("Given first hop \"%s\" not found in "
                                        "consensus.  Is it offline?" %
                                        args.first_hop)
@@ -224,11 +221,6 @@ def select_exits(args, module):
     before = datetime.datetime.now()
     hosts = []
 
-    consensus = util.get_consensus_path(args)
-
-    if not os.path.exists(consensus):
-        raise IOError("The consensus file \"%s\" does not exist." % consensus)
-
     if module.destinations is not None:
         hosts = [(socket.gethostbyname(host), port) for
                  (host, port) in module.destinations]
@@ -239,7 +231,7 @@ def select_exits(args, module):
         exit_relays = [args.exit]
         total = len(exit_relays)
     else:
-        total, exit_relays = relayselector.get_exits(consensus,
+        total, exit_relays = relayselector.get_exits(args.temp_dir,
                                                      country_code=args.country,
                                                      hosts=hosts)
 
@@ -305,8 +297,8 @@ def iter_exit_relays(exit_relays, controller, stats, args):
     """
 
     before = datetime.datetime.now()
-    consensus = util.get_consensus_path(args)
-    fingerprints = relayselector.get_fingerprints(consensus)
+    cached_consensus_path = os.path.join(args.temp_dir, "cached-consensus")
+    fingerprints = relayselector.get_fingerprints(cached_consensus_path)
     count = len(exit_relays)
 
     # Start building a circuit for every exit relay we got.
