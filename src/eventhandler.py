@@ -63,7 +63,7 @@ class EventHandler(object):
     new streams unattached.
     """
 
-    def __init__(self, controller, module, stats):
+    def __init__(self, controller, module, socks_port, stats):
 
         self.stats = stats
         self.attachers = {}
@@ -72,12 +72,15 @@ class EventHandler(object):
         self.origsock = socket.socket
         self.manager = multiprocessing.Manager()
         self.queue = self.manager.Queue()
+        self.socks_port = socks_port
+        self.torsocks_conf = util.create_temp_torsocks_conf(self.socks_port)
 
         queue_thread = threading.Thread(target=self.queue_reader)
         queue_thread.daemon = False
         queue_thread.start()
 
-        mysocks.setdefaultproxy(mysocks.PROXY_TYPE_SOCKS5, "127.0.0.1", 45678)
+        mysocks.setdefaultproxy(mysocks.PROXY_TYPE_SOCKS5,
+                                "127.0.0.1", socks_port)
 
     def prepare_attach(self, port, circuit_id=None, stream_id=None):
         """
@@ -226,7 +229,7 @@ class EventHandler(object):
         # to execute external tools and a decorator for the probing module we
         # are about to run.
 
-        cmd = command.Command("doc/torsocks.conf", self.queue, circ_event.id,
+        cmd = command.Command(self.torsocks_conf, self.queue, circ_event.id,
                               self.origsock)
         func = decorator(self.queue, self.origsock, self.module.probe,
                          circ_event.id, exit_fpr, cmd)

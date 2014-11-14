@@ -24,6 +24,7 @@ import datetime
 import random
 import logging
 import ConfigParser
+import functools
 
 import stem
 import stem.connection
@@ -55,10 +56,13 @@ def bootstrap_tor(args):
         logger.info("No first hop given.  Using randomly determined first "
                     "hops for circuits.")
 
+    ports = {}
+    partial_parse_log_lines = functools.partial(util.parse_log_lines, ports)
+
     proc = stem.process.launch_tor_with_config(
         config={
-            "SOCKSPort": "45678",
-            "ControlPort": "45679",
+            "SOCKSPort": "auto",
+            "ControlPort": "auto",
             "DataDirectory": args.temp_dir,
             "CookieAuthentication": "1",
             "LearnCircuitBuildTimeout": "0",
@@ -71,12 +75,12 @@ def bootstrap_tor(args):
         timeout=90,
         take_ownership=True,
         completion_percent=80,
-        init_msg_handler=lambda line: logger.debug("Tor says: %s" % line),
+        init_msg_handler=partial_parse_log_lines,
     )
 
     logger.info("Successfully started Tor process (PID=%d)." % proc.pid)
 
-    return proc
+    return ports["socks"], ports["control"]
 
 
 def parse_cmd_args():
@@ -179,8 +183,8 @@ def main():
 
     logger.debug("Command line arguments: %s" % str(args))
 
-    bootstrap_tor(args)
-    controller = Controller.from_port(port=45679)
+    socks_port, control_port = bootstrap_tor(args)
+    controller = Controller.from_port(port=control_port)
     stem.connection.authenticate(controller)
 
     # Redirect Tor's logging to work around the following problem:
@@ -203,7 +207,7 @@ def main():
 
     for module_name in args.module:
         try:
-            run_module(module_name, args, controller, stats)
+            run_module(module_name, args, controller, socks_port, stats)
         except error.ExitSelectionError as err:
             logger.error("failed to run because : %s" %err)
     return 0
@@ -249,7 +253,7 @@ def select_exits(args, module):
     return exit_relays
 
 
-def run_module(module_name, args, controller, stats):
+def run_module(module_name, args, controller, socks_port, stats):
     """
     Run an exitmap module over all available exit relays.
     """
@@ -278,7 +282,7 @@ def run_module(module_name, args, controller, stats):
         raise error.ExitSelectionError("Exit selection yielded %d exits "
                                        "but need at least one." % count)
 
-    handler = EventHandler(controller, module, stats)
+    handler = EventHandler(controller, module, socks_port, stats)
     controller.add_event_listener(handler.new_event,
                                   EventType.CIRC, EventType.STREAM)
 

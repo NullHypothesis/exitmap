@@ -19,12 +19,58 @@ import re
 import os
 import urllib2
 import json
+import tempfile
+import atexit
 
 from stem.descriptor.reader import DescriptorReader
 
 import log
 
 logger = log.get_logger()
+
+
+def create_temp_torsocks_conf(socks_port):
+    """
+    Write a temporary config file for torsocks to disk.
+
+    The name of the temporary file is returned and the file is removed when the
+    program finishes.
+    """
+
+    content = "TorAddress 127.0.0.1\nTorPort %d\n" % socks_port
+
+    fd, file_path = tempfile.mkstemp(prefix="torsocks_")
+    os.write(fd, content)
+    os.close(fd)
+
+    # Remove the file when the program finishes.
+
+    atexit.register(os.unlink, file_path)
+
+    return file_path
+
+
+def parse_log_lines(ports, log_line):
+    """
+    Extract the SOCKS and control port from Tor's log output.
+
+    Both ports are written to the given dictionary.
+    """
+
+    logger.debug("Tor says: %s" % log_line)
+
+    socks_pattern = "Socks listener listening on port ([0-9]{1,5})."
+    control_pattern = "Control listener listening on port ([0-9]{1,5})."
+
+    match = re.search(socks_pattern, log_line)
+    if match:
+        ports["socks"] = int(match.group(1))
+        logger.debug("Tor uses port %d as SOCKS port." % ports["socks"])
+
+    match = re.search(control_pattern, log_line)
+    if match:
+        ports["control"] = int(match.group(1))
+        logger.debug("Tor uses port %d as control port." % ports["control"])
 
 
 def relay_in_consensus(fingerprint, cached_consensus_path):
