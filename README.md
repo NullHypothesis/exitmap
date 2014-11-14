@@ -41,12 +41,12 @@ If you want to use a static first hop, execute:
 
 To run the same test over German exit relays only, execute:
 
-    $ ./bin/exitmap -C DE --first-hop CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912 checktest
+    $ ./bin/exitmap --country DE --first-hop CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912 checktest
 
-If you want to pause for 5 seconds in between circuits creations in order to
-reduce the load on the Tor network and the scanning destination, execute
+If you want to pause for five seconds in between circuit creations in order to
+reduce the load on the Tor network and the scanning destination, execute:
 
-    $ ./bin/exitmap -d 5 checktest
+    $ ./bin/exitmap --build-delay 5 checktest
 
 Note that
 [`CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912`](https://atlas.torproject.org/#details/CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912)
@@ -57,7 +57,7 @@ each circuit.
 
 To get an overview of `exitmap`'s options, execute:
 
-    $ ./bin/exitmap -h
+    $ ./bin/exitmap --help
 
 `exitmap` comes with the following modules.
 
