@@ -305,6 +305,8 @@ def iter_exit_relays(exit_relays, controller, stats, args):
     fingerprints = relayselector.get_fingerprints(cached_consensus_path)
     count = len(exit_relays)
 
+    logger.info("Beginning to trigger circuit creations.")
+
     # Start building a circuit for every exit relay we got.
 
     for i, exit_relay in enumerate(exit_relays):
