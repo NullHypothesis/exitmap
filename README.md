@@ -20,6 +20,11 @@ relays](http://www.cs.kau.se/philwint/spoiled_onions).  It is quite easy to
 develop new modules for `exitmap`; just have a look at the file HACKING in the
 doc/ directory.
 
+Finally, note that `exitmap` is not meant to be run by ordinary Tor users.  The
+Tor Project is already running the tool on a regular basis and more `exitmap`
+users just put more stress on the network.  The only reason it is publicly
+available is because its source code and design might be of interest to some.
+
 Installation
 ------------
 
