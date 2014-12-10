@@ -70,6 +70,12 @@ To get an overview of `exitmap`'s options, execute:
   records to the expected records.
 * `patchingCheck`: Checks for file tampering.
 
+Our [research paper](http://www.cs.kau.se/philwint/spoiled_onions/pets2014.pdf)
+also discusses an HTTPS, XMPP, IMAPS, SSH, and an sslstrip module.  We decided
+not to publish these modules since they would likely help attackers more than
+security researchers.  Having said that, we are willing to share these modules
+in private.
+
 Configuration
 -------------
 
