@@ -136,11 +136,13 @@ def parse_cmd_args():
                         help="Wait for the given delay (in seconds) between "
                              "circuit builds.  The default is 3.")
 
+    data_directory = "/tmp/exitmap_tor_datadir",
     parser.add_argument("-t", "--temp-dir", type=str,
-                        default="/tmp/exitmap_tor_datadir",
-                        help="Directory for temporary data.  If set, the "
-                             "network consensus can be re-used in between "
-                             "scans.")
+                        default=data_directory,
+                        help="Tor's data directory.  If set, the network "
+                             "consensus can be re-used in between scans which "
+                             "speeds up bootstrapping.  The default is %s." %
+                             data_directory)
 
     parser.add_argument("-v", "--verbosity", type=str, default="info",
                         help="Minimum verbosity level for logging.  Available "
