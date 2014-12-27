@@ -288,9 +288,9 @@ def run_module(module_name, args, controller, socks_port, stats):
     controller.add_event_listener(handler.new_event,
                                   EventType.CIRC, EventType.STREAM)
 
-    logger.debug("Circuit creation delay of %.3f seconds will account for "
-                 "total delay of %.3f seconds." % (args.build_delay,
-                                                   count * args.build_delay))
+    duration = count * args.build_delay
+    logger.info("Scan is estimated to take around %s." %
+                datetime.timedelta(seconds=duration))
 
     logger.debug("Beginning to trigger %d circuit creation(s)." % count)
 
