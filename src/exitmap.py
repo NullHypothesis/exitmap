@@ -136,7 +136,7 @@ def parse_cmd_args():
                         help="Wait for the given delay (in seconds) between "
                              "circuit builds.  The default is 3.")
 
-    data_directory = "/tmp/exitmap_tor_datadir",
+    data_directory = "/tmp/exitmap_tor_datadir"
     parser.add_argument("-t", "--temp-dir", type=str,
                         default=data_directory,
                         help="Tor's data directory.  If set, the network "
