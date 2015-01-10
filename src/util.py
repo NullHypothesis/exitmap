@@ -148,3 +148,11 @@ def get_relays_in_country(country_code):
                 len(fingerprints))
 
     return fingerprints
+
+
+def exiturl(exit_fpr):
+    """
+    Return an Atlas link for the exit relay fingerprint.
+    """
+
+    return "<https://atlas.torproject.org/#details/%s>" % exit_fpr
