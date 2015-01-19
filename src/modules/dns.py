@@ -64,6 +64,7 @@ def probe(exit_fpr, cmd):
     # Format: <domain> : <ipv4_addresses>
 
     domains = {
+        "www.youporn.com": ["31.192.116.24"],
         "youporn.com": ["31.192.116.24"],
         "www.torproject.org": ["38.229.72.14", "93.95.227.222", "86.59.30.40",
                                "38.229.72.16", "82.195.75.101",
@@ -73,8 +74,11 @@ def probe(exit_fpr, cmd):
                               "195.35.109.53", "195.35.109.44",
                               "91.218.244.151"],
         "www.i2p2.de": ["91.143.92.136"],
-        "thepiratebay.se": ["194.71.107.27"],
+        "thepiratebay.se": ["104.28.5.42", "104.28.4.42"],
         "torrentfreak.com": ["162.159.245.23", "162.159.246.23"],
+        "github.com": ["192.30.252.128", "192.30.252.129", "192.30.252.131",
+                       "192.30.252.130"],
+        "blockchain.info": ["141.101.112.196", "190.93.243.195"],
     }
 
     for domain in domains.iterkeys():
