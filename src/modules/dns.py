@@ -21,6 +21,7 @@ Module to detect malfunctioning DNS resolution.
 
 import log
 import mysocks
+from util import exiturl
 
 logger = log.get_logger()
 
@@ -42,18 +43,15 @@ def resolve(exit_fpr, domain, whitelist):
         ipv4 = sock.resolve(domain)
     except mysocks.GeneralProxyError as err:
         logger.debug("Exit relay %s could not resolve IPv4 address for "
-                     "\"%s\" because: %s" % (exit_fpr, domain, err))
+                     "\"%s\" because: %s" % (exiturl(exit_fpr), domain, err))
         return
 
-    url_prefix = "https://globe.torproject.org/#/relay/"
-
     if ipv4 not in whitelist:
-        logger.critical("Exit relay <%s> returned unexpected IPv4 address %s "
-                        "for domain %s" %
-                        (url_prefix + exit_fpr, ipv4, domain))
+        logger.critical("Exit relay %s returned unexpected IPv4 address %s "
+                        "for domain %s" % (exiturl(exit_fpr), ipv4, domain))
     else:
-        logger.debug("IPv4 address of domain %s as expected for <%s>." %
-                     (domain, url_prefix + exit_fpr))
+        logger.debug("IPv4 address of domain %s as expected for %s." %
+                     (domain, exiturl(exit_fpr)))
 
 
 def probe(exit_fpr, cmd):
