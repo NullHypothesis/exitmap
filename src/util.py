@@ -28,6 +28,9 @@ import log
 
 logger = log.get_logger()
 
+# Holds the directory to which we can write temporary analysis results.
+
+analysis_dir = None
 
 def create_temp_torsocks_conf(socks_port):
     """
@@ -156,3 +159,30 @@ def exiturl(exit_fpr):
     """
 
     return "<https://atlas.torproject.org/#details/%s>" % exit_fpr
+
+
+def dump_to_file(blurb, exit_fpr):
+    """
+    Dump the given blurb to a randomly generated file which contains exit_fpr.
+
+    This function is useful to save data obtained from bad exit relays to file
+    for later analysis.
+    """
+
+    if analysis_dir is None:
+        fd, file_name = tempfile.mkstemp(prefix="%s_" % exit_fpr)
+    else:
+        fd, file_name = tempfile.mkstemp(prefix="%s_" % exit_fpr,
+                                         dir=analysis_dir)
+
+    try:
+        with open(file_name, "w") as fd:
+            fd.write(blurb)
+    except IOError as err:
+        logger.warning("Couldn't write to \"%s\": %s" % (file_name, err))
+        return None
+
+    logger.debug("Wrote %d-length blurb to file \"%s\"." %
+                 (len(blurb), file_name))
+
+    return file_name

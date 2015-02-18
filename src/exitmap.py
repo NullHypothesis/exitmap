@@ -50,7 +50,7 @@ def bootstrap_tor(args):
     """
 
     logger.info("Attempting to invoke Tor process in directory \"%s\".  This "
-                "might take a while." % args.temp_dir)
+                "might take a while." % args.tor_dir)
 
     if not args.first_hop:
         logger.info("No first hop given.  Using randomly determined first "
@@ -63,7 +63,7 @@ def bootstrap_tor(args):
         config={
             "SOCKSPort": "auto",
             "ControlPort": "auto",
-            "DataDirectory": args.temp_dir,
+            "DataDirectory": args.tor_dir,
             "CookieAuthentication": "1",
             "LearnCircuitBuildTimeout": "0",
             "CircuitBuildTimeout": "40",
@@ -136,13 +136,19 @@ def parse_cmd_args():
                         help="Wait for the given delay (in seconds) between "
                              "circuit builds.  The default is 3.")
 
-    data_directory = "/tmp/exitmap_tor_datadir"
-    parser.add_argument("-t", "--temp-dir", type=str,
-                        default=data_directory,
+    tor_directory = "/tmp/exitmap_tor_datadir"
+    parser.add_argument("-t", "--tor-dir", type=str,
+                        default=tor_directory,
                         help="Tor's data directory.  If set, the network "
                              "consensus can be re-used in between scans which "
                              "speeds up bootstrapping.  The default is %s." %
-                             data_directory)
+                             tor_directory)
+
+    parser.add_argument("-a", "--analysis-dir", type=str,
+                        default=None,
+                        help="The directory where analysis results are "
+                             "written to.  If the directory is used depends "
+                             "on the module.  The default is /tmp.")
 
     parser.add_argument("-v", "--verbosity", type=str, default="info",
                         help="Minimum verbosity level for logging.  Available "
@@ -180,6 +186,7 @@ def main():
 
     stats = Statistics()
     args = parse_cmd_args()
+    util.analysis_dir = args.analysis_dir
 
     logger.setLevel(logging.__dict__[args.verbosity.upper()])
 
@@ -200,7 +207,7 @@ def main():
 
     controller.set_conf("FetchServerDescriptors", "0")
 
-    cached_consensus_path = os.path.join(args.temp_dir, "cached-consensus")
+    cached_consensus_path = os.path.join(args.tor_dir, "cached-consensus")
     if args.first_hop and (not util.relay_in_consensus(args.first_hop,
                                                        cached_consensus_path)):
         raise error.PathSelectionError("Given first hop \"%s\" not found in "
@@ -237,7 +244,7 @@ def select_exits(args, module):
         exit_relays = [args.exit]
         total = len(exit_relays)
     else:
-        total, exit_relays = relayselector.get_exits(args.temp_dir,
+        total, exit_relays = relayselector.get_exits(args.tor_dir,
                                                      country_code=args.country,
                                                      hosts=hosts)
 
@@ -303,7 +310,7 @@ def iter_exit_relays(exit_relays, controller, stats, args):
     """
 
     before = datetime.datetime.now()
-    cached_consensus_path = os.path.join(args.temp_dir, "cached-consensus")
+    cached_consensus_path = os.path.join(args.tor_dir, "cached-consensus")
     fingerprints = relayselector.get_fingerprints(cached_consensus_path)
     count = len(exit_relays)
 
