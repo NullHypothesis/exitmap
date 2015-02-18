@@ -189,9 +189,9 @@ def main():
 
     # Create and set the given directories.
 
-    if not os.path.exists(args.tor_dir):
+    if args.tor_dir and not os.path.exists(args.tor_dir):
         os.makedirs(args.tor_dir)
-    if not os.path.exists(args.analysis_dir):
+    if args.analysis_dir and not os.path.exists(args.analysis_dir):
         os.makedirs(args.analysis_dir)
     util.analysis_dir = args.analysis_dir
 
