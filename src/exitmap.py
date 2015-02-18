@@ -186,6 +186,13 @@ def main():
 
     stats = Statistics()
     args = parse_cmd_args()
+
+    # Create and set the given directories.
+
+    if not os.path.exists(args.tor_dir):
+        os.makedirs(args.tor_dir)
+    if not os.path.exists(args.analysis_dir):
+        os.makedirs(args.analysis_dir)
     util.analysis_dir = args.analysis_dir
 
     logger.setLevel(logging.__dict__[args.verbosity.upper()])
