@@ -15,6 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with exitmap.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+Handles Tor controller events.
+"""
+
 import sys
 import functools
 import threading

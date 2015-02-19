@@ -15,6 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with exitmap.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+Provides functions to keep track of scanning statistics.
+"""
+
 from datetime import datetime
 
 from stem import CircStatus
@@ -25,6 +29,11 @@ logger = log.get_logger()
 
 
 class Statistics(object):
+
+    """
+    Keep track of scanning statistics.
+    """
+
     def __init__(self):
         """
         Initialise a Statistics object.
@@ -39,6 +48,9 @@ class Statistics(object):
         self.failed_streams = 0
 
     def update_circs(self, circ_event):
+        """
+        Update statistics with the given circuit event."
+        """
 
         if circ_event.status in [CircStatus.FAILED]:
 

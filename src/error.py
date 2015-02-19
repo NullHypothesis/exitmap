@@ -15,10 +15,23 @@
 # You should have received a copy of the GNU General Public License
 # along with exitmap.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+Exports custom exceptions.
+"""
 
 class ExitSelectionError(Exception):
+
+    """
+    Represents an error during selection of exit relays.
+    """
+
     pass
 
 
 class PathSelectionError(Exception):
+
+    """
+    Represents an error during selection of a path for a circuit.
+    """
+
     pass

@@ -17,6 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with exitmap.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+Extracts exit relays with given attributes from consensus.
+"""
+
 import os
 import sys
 import argparse
@@ -78,6 +82,12 @@ def get_fingerprints(cached_consensus_path, exclude=[]):
 
 def get_exits(data_dir, country_code=None, bad_exit=False,
               version=None, nickname=None, address=None, hosts=[]):
+    """
+    Extract exit relays with given attributes from consensus.
+
+    Attempts to get the consensus from the provided data directory and extracts
+    all relays with the given attributes.
+    """
 
     cached_consensus = {}
     have_exit_policy = {}

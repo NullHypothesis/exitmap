@@ -15,6 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with exitmap.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+Provides and API to execute system commands over torsocks.
+"""
+
 import os
 import socket
 import threading
