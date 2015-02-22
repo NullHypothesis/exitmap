@@ -33,6 +33,10 @@ and newer, you can install `Stem` by executing:
 
     # apt-get install python-stem
 
+Alternatively, you can install `Stem` using `pip`:
+
+    $ pip install -r requirements.txt
+
 Running exitmap
 ---------------
 
