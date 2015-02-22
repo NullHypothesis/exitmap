@@ -194,3 +194,25 @@ def dump_to_file(blurb, exit_fpr):
                  (len(blurb), file_name))
 
     return file_name
+
+
+def new_request(url, data=None):
+    """
+    Return a request object whose HTTP header resembles TorBrowser.
+    """
+
+    request = urllib2.Request(url, data)
+
+    # Try to resemble the HTTP request of TorBrowser as closely as possible.
+    # Note that the order of header fields is also relevant but urllib2 uses a
+    # dictionary for headers, which is orderless.
+
+    request.add_header("User-Agent", "Mozilla/5.0 (Windows NT 6.1; rv:31.0) "
+                                     "Gecko/20100101 Firefox/31.0")
+    request.add_header("Accept", "text/html,application/xhtml+xml,"
+                                 "application/xml;q=0.9,*/*;q=0.8")
+    request.add_header("Accept-Language", "en-us,en;q=0.5")
+    request.add_header("Accept-Encoding", "gzip, deflate")
+    request.add_header("Connection", "keep-alive")
+
+    return request
