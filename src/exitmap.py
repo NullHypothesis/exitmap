@@ -164,6 +164,9 @@ def parse_cmd_args():
                              "is used as first hop.  This relay should be "
                              "under your control.")
 
+    parser.add_argument("-V", "--version", action="version",
+                        version="%(prog)s 2015.04.06")
+
     parser.add_argument("module", nargs='+',
                         help="Run the given module (available: %s)." %
                         ", ".join(get_modules()))
