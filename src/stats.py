@@ -1,4 +1,4 @@
-# Copyright 2013, 2014 Philipp Winter <phw@nymity.ch>
+# Copyright 2013, 2014, 2015 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
 #
@@ -66,13 +66,13 @@ class Statistics(object):
         Print statistics about ongoing probing process.
         """
 
-        if self.finished_streams % sampling:
+        if (sampling == 0) or (self.finished_streams % sampling):
             return
 
-        assert self.total_circuits > 0
+        if self.total_circuits == 0:
+            return
 
-        percent_done = ((float(100) / self.total_circuits) *
-                        self.successful_circuits)
+        percent_done = self.successful_circuits / (self.total_circuits * 100.0)
 
         logger.info("Probed %d out of %d exit relays, so we are %.2f%% done." %
                     (self.successful_circuits,
@@ -84,6 +84,13 @@ class Statistics(object):
         Print the gathered statistics.
         """
 
-        return "Ran %d module(s) in %s and %d/%d circuits failed." % \
-               (self.modules_run, str(datetime.now() - self.start_time),
-                self.failed_circuits, self.total_circuits)
+        percent = 0
+        if self.total_circuits > 0:
+            percent = self.failed_circuits / (self.total_circuits * 100.0)
+
+        return ("Ran %d module(s) in %s and %d/%d circuits failed (%.2f%%)." %
+                (self.modules_run,
+                 str(datetime.now() - self.start_time),
+                 self.failed_circuits,
+                 self.total_circuits,
+                 percent))
