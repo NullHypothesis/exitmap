@@ -72,7 +72,8 @@ class Statistics(object):
         if self.total_circuits == 0:
             return
 
-        percent_done = self.successful_circuits / (self.total_circuits * 100.0)
+        percent_done = (self.successful_circuits /
+                        float(self.total_circuits)) * 100
 
         logger.info("Probed %d out of %d exit relays, so we are %.2f%% done." %
                     (self.successful_circuits,
@@ -86,7 +87,7 @@ class Statistics(object):
 
         percent = 0
         if self.total_circuits > 0:
-            percent = self.failed_circuits / (self.total_circuits * 100.0)
+            percent = (self.failed_circuits / float(self.total_circuits)) * 100
 
         return ("Ran %d module(s) in %s and %d/%d circuits failed (%.2f%%)." %
                 (self.modules_run,
