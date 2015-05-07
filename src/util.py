@@ -1,4 +1,4 @@
-# Copyright 2013, 2014 Philipp Winter <phw@nymity.ch>
+# Copyright 2013-2015 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
 #
@@ -35,6 +35,7 @@ logger = log.get_logger()
 # Holds the directory to which we can write temporary analysis results.
 
 analysis_dir = None
+
 
 def create_temp_torsocks_conf(socks_port):
     """

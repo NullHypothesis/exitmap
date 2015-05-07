@@ -1,4 +1,4 @@
-# Copyright 2013, 2014 Philipp Winter <phw@nymity.ch>
+# Copyright 2013-2015 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
 #
@@ -18,6 +18,7 @@
 """
 Exports custom exceptions.
 """
+
 
 class ExitSelectionError(Exception):
 

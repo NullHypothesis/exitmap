@@ -1,4 +1,4 @@
-# Copyright 2013, 2014 Philipp Winter <phw@nymity.ch>
+# Copyright 2013-2015 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
 #
@@ -232,7 +232,7 @@ def main():
         try:
             run_module(module_name, args, controller, socks_port, stats)
         except error.ExitSelectionError as err:
-            logger.error("failed to run because : %s" %err)
+            logger.error("failed to run because : %s" % err)
     return 0
 
 
