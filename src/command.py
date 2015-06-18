@@ -26,7 +26,7 @@ import subprocess
 
 import log
 import util
-import mysocks
+import torsocks
 
 logger = log.get_logger()
 
@@ -40,16 +40,16 @@ def run_python_over_tor(queue, circ_id, socks_port):
         """
         Route the given Python function's network traffic over Tor.
 
-        We temporarily monkey-patch socket.socket using our mysocks module and
+        We temporarily monkey-patch socket.socket using our torsocks module and
         reset it, once the function returns.
         """
 
-        mysocks.setdefaultproxy(mysocks.PROXY_TYPE_SOCKS5,
-                                "127.0.0.1",
-                                socks_port)
+        torsocks.set_default_proxy("127.0.0.1", socks_port)
+        torsocks.queue = queue
+        torsocks.circ_id = circ_id
+
         orig_socket = socket.socket
-        socket.socket = mysocks.socksocket
-        mysocks.setqueue(queue, circ_id)
+        socket.socket = torsocks.torsocket
 
         func(*args)
 

@@ -36,3 +36,12 @@ class PathSelectionError(Exception):
     """
 
     pass
+
+
+class SOCKSv5Error(Exception):
+
+    """
+    Represents an error while negotiating SOCKSv5.
+    """
+
+    pass
