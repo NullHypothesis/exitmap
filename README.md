@@ -4,25 +4,25 @@ Overview
 --------
 
 `exitmap` is a fast and extensible Python-based scanner for
-[Tor](https://www.torproject.org) exit relays.  Modules implement tasks which
-are then run over all exit relays or a subset thereof.  If you have a
-background in functional programming, think of `exitmap` as a `map()` interface
-for Tor exit relays.  In practice, `exitmap` is useful to monitor the
-reliability and trustworthiness of exit relays.
+[Tor](https://www.torproject.org) exit relays.  Modules implement tasks that
+are then run over (a subset of) all exit relays.  If you have a background in
+functional programming, think of `exitmap` as a `map()` interface for Tor exit
+relays.  In practice, `exitmap` is useful to monitor the reliability and
+trustworthiness of exit relays; `exitmap` is used to check for false negatives
+on the Tor Project's [check](https://check.torproject.org) service and to find
+[malicious exit relays](http://www.cs.kau.se/philwint/spoiled_onions).  It is
+quite easy to develop new modules for `exitmap`; just have a look at the file
+HACKING in the doc/ directory, or check out one of the existing modules.
 
-`exitmap` uses [`Stem`](https://stem.torproject.org) to initiate circuits over
-all given exit relays and as soon as `tor` notifies `exitmap` of an established
-circuit, a module is invoked for the newly established circuit.
-
-`exitmap` has been used to check for false negatives on the Tor Project's
-[check](https://check.torproject.org) service and to find [malicious exit
-relays](http://www.cs.kau.se/philwint/spoiled_onions).  It is quite easy to
-develop new modules for `exitmap`; just have a look at the file HACKING in the
-doc/ directory.
+`exitmap` uses [`Stem`](https://stem.torproject.org) to create circuits to all
+given exit relays, and as soon as `tor` notifies `exitmap` of an established
+circuit, a module is invoked for the newly established circuit.  Modules can be
+pure Python scripts or external programs.  For external programs,
+[`torsocks`](https://github.com/dgoulet/torsocks/) is necessary.
 
 Finally, note that `exitmap` is not meant to be run by ordinary Tor users.  The
-Tor Project is already running the tool on a regular basis and more `exitmap`
-users just put more stress on the network.  The only reason it is publicly
+Tor Project is already running the tool on a regular basis.  More `exitmap`
+users means more stress on the network.  The only reason it is publicly
 available is because its source code and design might be of interest to some.
 
 Installation
