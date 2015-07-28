@@ -20,5 +20,5 @@ From an implementation point of view, there are two types of modules:
    certificates.  Similarly, a patched version of torsocks is used to
    transparently tunnel this type of network traffic over Tor's SOCKS port.
 
-To get an idea of what a module looks like in practice, have a look at the file
-src/modules/dummy.py.  The file contains comments which explain the API.
+To get an idea of what a module looks like in practice, have a look at the
+existing files in src/modules/.
