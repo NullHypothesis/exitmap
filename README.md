@@ -28,14 +28,12 @@ available is because its source code and design might be of interest to some.
 Installation
 ------------
 
-`exitmap` uses the library `Stem` to communicate with Tor.  On Debian jessie
-and newer, you can install `Stem` by executing:
+`exitmap` uses the library `Stem` to communicate with Tor.  There are
+[plenty of ways](https://stem.torproject.org/download.html) to install `Stem`.
+The easiest might be to use `pip` in combination with the provided
+requirements.txt file:
 
-    # apt-get install python-stem
-
-Alternatively, you can install `Stem` using `pip`:
-
-    $ pip install -r requirements.txt
+    $ pip install --user -r requirements.txt
 
 Running exitmap
 ---------------
