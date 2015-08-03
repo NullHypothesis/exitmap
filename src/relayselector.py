@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright 2013, 2014 Philipp Winter <phw@nymity.ch>
+# Copyright 2013-2015 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
 #
@@ -159,6 +159,10 @@ def get_exits(data_dir, country_code=None, bad_exit=False,
 
     if bad_exit:
         exit_candidates = filter(lambda desc: stem.Flag.BADEXIT in
+                                 cached_consensus[desc.fingerprint].flags,
+                                 exit_candidates)
+    else:
+        exit_candidates = filter(lambda desc: not stem.Flag.BADEXIT in
                                  cached_consensus[desc.fingerprint].flags,
                                  exit_candidates)
 
