@@ -265,9 +265,12 @@ def select_exits(args, module):
     logger.debug("Successfully selected exit relays after %s." %
                  str(datetime.datetime.now() - before))
 
-    logger.info("%d%s exits out of all %s exit relays allow exiting to %s." %
-                (len(exit_relays), " %s" %
-                 args.country if args.country else "", total, hosts))
+    pretty_hosts = ["%s:%d" % (host, port) for host, port in hosts]
+    logger.info("%d%s exit relays out of all %s exit relays allow traffic "
+                "to: %s" % (len(exit_relays),
+                            " %s" % args.country if args.country else "",
+                            total,
+                            ", ".join(pretty_hosts)))
 
     assert isinstance(exit_relays, list)
 
