@@ -20,6 +20,7 @@ Module to detect malfunctioning DNS resolution.
 """
 
 import log
+import socket
 import mysocks
 from util import exiturl
 
@@ -36,6 +37,7 @@ def resolve(exit_fpr, domain, whitelist):
     """
 
     sock = mysocks.socksocket()
+    sock.settimeout(10)
 
     # Resolve the domain using Tor's SOCKS extension.
 
@@ -44,6 +46,10 @@ def resolve(exit_fpr, domain, whitelist):
     except mysocks.GeneralProxyError as err:
         logger.debug("Exit relay %s could not resolve IPv4 address for "
                      "\"%s\" because: %s" % (exiturl(exit_fpr), domain, err))
+        return
+    except socket.timeout as err:
+        logger.debug("Socket over exit relay %s timed out: %s" %
+                     (exiturl(exit_fpr), err))
         return
 
     if ipv4 not in whitelist:
