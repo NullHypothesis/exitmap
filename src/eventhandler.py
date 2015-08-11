@@ -1,4 +1,4 @@
-# Copyright 2013, 2014 Philipp Winter <phw@nymity.ch>
+# Copyright 2013-2015 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
 #
@@ -37,20 +37,15 @@ import log
 logger = log.get_logger()
 
 
-def decorator(queue, orig_socket, module, circ_id, *module_args):
+def decorator(queue, module, circ_id, *module_args):
 
     def wrapper():
 
         try:
             module(*module_args)
 
-            tmp_socket = socket.socket
-            socket.socket = orig_socket
-
             logger.debug("Informing event handler that module finished.")
             queue.put((circ_id, None))
-
-            socket.socket = tmp_socket
         except KeyboardInterrupt:
             pass
 
@@ -73,18 +68,13 @@ class EventHandler(object):
         self.attachers = {}
         self.controller = controller
         self.module = module
-        self.origsock = socket.socket
         self.manager = multiprocessing.Manager()
         self.queue = self.manager.Queue()
         self.socks_port = socks_port
-        self.torsocks_conf = util.create_temp_torsocks_conf(self.socks_port)
 
         queue_thread = threading.Thread(target=self.queue_reader)
         queue_thread.daemon = False
         queue_thread.start()
-
-        mysocks.setdefaultproxy(mysocks.PROXY_TYPE_SOCKS5,
-                                "127.0.0.1", socks_port)
 
     def prepare_attach(self, port, circuit_id=None, stream_id=None):
         """
@@ -207,7 +197,6 @@ class EventHandler(object):
 
             if hasattr(self.module, "teardown"):
                 logger.debug("Calling module's teardown() function.")
-                socket.socket = self.origsock
                 self.module.teardown()
 
             logger.info(self.stats)
@@ -229,22 +218,20 @@ class EventHandler(object):
         logger.debug("Circuit for exit relay \"%s\" is built.  "
                      "Now invoking probing module." % exit_fpr)
 
-        # Prepare the execution environment.  In particular, a Command() object
-        # to execute external tools and a decorator for the probing module we
-        # are about to run.
+        torsocks_file = util.create_temp_torsocks_conf(self.socks_port)
+        run_cmd_over_tor = command.Command(torsocks_file,
+                                           self.queue,
+                                           circ_event.id,
+                                           socket.socket)
 
-        cmd = command.Command(self.torsocks_conf, self.queue, circ_event.id,
-                              self.origsock)
-        func = decorator(self.queue, self.origsock, self.module.probe,
-                         circ_event.id, exit_fpr, cmd)
+        module = decorator(self.queue, self.module.probe,
+                           circ_event.id, exit_fpr,
+                           command.run_python_over_tor(self.queue,
+                                                       circ_event.id,
+                                                       self.socks_port),
+                           run_cmd_over_tor)
 
-        # Monkey-patch the socket API to redirect network traffic originating
-        # from our Python process to Tor's SOCKS port.
-
-        socket.socket = mysocks.socksocket
-        mysocks.setqueue(self.queue, circ_event.id)
-
-        proc = multiprocessing.Process(target=func)
+        proc = multiprocessing.Process(target=module)
         proc.daemon = True
         proc.start()
 

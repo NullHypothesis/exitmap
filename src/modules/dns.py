@@ -1,4 +1,4 @@
-# Copyright 2013, 2014 Philipp Winter <phw@nymity.ch>
+# Copyright 2013-2015 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
 #
@@ -60,9 +60,9 @@ def resolve(exit_fpr, domain, whitelist):
                      (domain, exiturl(exit_fpr)))
 
 
-def probe(exit_fpr, cmd):
+def probe(exit_fpr, run_python_over_tor, run_cmd_over_tor):
     """
-    Probe the given exit relay and check if the domains resolve as expected.
+    Probe the given exit relay and check if all domains resolve as expected.
     """
 
     # Format: <domain> : <ipv4_addresses>
@@ -84,4 +84,4 @@ def probe(exit_fpr, cmd):
     }
 
     for domain in domains.iterkeys():
-        resolve(exit_fpr, domain, domains[domain])
+        run_python_over_tor(resolve, exit_fpr, domain, domains[domain])

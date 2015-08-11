@@ -1,4 +1,4 @@
-# Copyright 2013, 2014 Philipp Winter <phw@nymity.ch>
+# Copyright 2013-2015 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
 #
@@ -26,8 +26,36 @@ import subprocess
 
 import log
 import util
+import mysocks
 
 logger = log.get_logger()
+
+
+def run_python_over_tor(queue, circ_id, socks_port):
+    """
+    Returns a closure to route a Python function's network traffic over Tor.
+    """
+
+    def closure(func, *args):
+        """
+        Route the given Python function's network traffic over Tor.
+
+        We temporarily monkey-patch socket.socket using our mysocks module and
+        reset it, once the function returns.
+        """
+
+        mysocks.setdefaultproxy(mysocks.PROXY_TYPE_SOCKS5,
+                                "127.0.0.1",
+                                socks_port)
+        orig_socket = socket.socket
+        socket.socket = mysocks.socksocket
+        mysocks.setqueue(queue, circ_id)
+
+        func(*args)
+
+        socket.socket = orig_socket
+
+    return closure
 
 
 class Command(object):

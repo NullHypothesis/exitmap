@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright 2014 Philipp Winter <phw@nymity.ch>
+# Copyright 2014, 2015 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
 #
@@ -24,32 +24,31 @@ that the relay (probably) has enough file descriptors.
 
 import re
 import urllib2
+import functools
 
 import log
+from util import exiturl
 
 logger = log.get_logger()
 
 destinations = [("people.torproject.org", 443)]
 
 
-def probe(exit_fpr, _):
-    """
-    Tries to fetch a simple web page and warns us if it doesn't work.
-    """
-
-    exit_url = "<https://atlas.torproject.org/#details/%s>" % exit_fpr
+def fetch_page(exit_fpr):
 
     expected = "This file is to check if your exit relay has enough file " \
                "descriptors to fetch it."
+
+    exit_url = exiturl(exit_fpr)
 
     logger.debug("Probing exit relay %s." % exit_url)
 
     data = None
     try:
-        data = urllib2.urlopen("https://people.torproject.org/~phw/test_file",
+        data = urllib2.urlopen("https://people.torproject.org/~phw/check_file",
                                timeout=10).read()
     except Exception as err:
-        logger.warning("urllib2.urlopen for %s says: %s." % (exit_url, err))
+        logger.warning("urllib2.urlopen for %s says: %s." % (exit_fpr, err))
         return
 
     if not data:
@@ -63,6 +62,14 @@ def probe(exit_fpr, _):
                        (exit_url, data))
     else:
         logger.debug("Exit relay %s worked fine." % exit_url)
+
+
+def probe(exit_fpr, run_python_over_tor, run_cmd_over_tor):
+    """
+    Attempts to fetch a small web page and yells if this fails.
+    """
+
+    run_python_over_tor(fetch_page, exit_fpr)
 
 
 def main():
