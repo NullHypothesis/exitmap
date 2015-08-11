@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-# Copyright 2013, 2014 Philipp Winter <phw@nymity.ch>
+# Copyright 2014, 2015 Philipp Winter <phw@nymity.ch>
+# Copyright 2014 Josh Pitts <josh.pitts@leviathansecurity.com>
 #
 # This file is part of exitmap.
 #
@@ -16,24 +17,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with exitmap.  If not, see <http://www.gnu.org/licenses/>.
-# ==============
-# Copyright 2014 Josh Pitts josh.pitts@leviathansecurity.com
-#
-# This file is part of exitmap.
-#
-# exitmap is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# exitmap is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with exitmap.  If not, see <http://www.gnu.org/licenses/>.
-
 
 """
 patchingCheck.py
@@ -50,11 +33,14 @@ Then run:
 
 """
 
+import sys
 import os
 import urllib2
 import tempfile
 import log
 import hashlib
+
+import util
 
 logger = log.get_logger()
 
@@ -163,27 +149,18 @@ def files_identical(observed_file, original_file):
     return original_data == observed_data
 
 
-def exiturl(exit_fpr):
+def run_check(exit_fpr):
     """
-    Return an Atlas link for the exit relay fingerprint.
-    """
-
-    return "<https://atlas.torproject.org/#details/%s>" % exit_fpr
-
-
-def probe(exit_fpr, _):
-    """
-    Probe the given exit relay and look for modified binaries.
+    Download file and check if its checksum is as expected.
     """
 
-    logger.debug("Now probing exit relay %s." % exiturl(exit_fpr))
+    exiturl = util.exiturl(exit_fpr)
 
     for url, file_info in check_files.iteritems():
 
         orig_file, orig_digest = file_info
 
-        logger.debug("Attempting to download <%s> over %s." %
-                     (url, exiturl(exit_fpr)))
+        logger.debug("Attempting to download <%s> over %s." % (url, exiturl))
 
         data = None
 
@@ -193,13 +170,12 @@ def probe(exit_fpr, _):
         try:
             data = urllib2.urlopen(request, timeout=20).read()
         except Exception as err:
-            logger.warning("urlopen() failed for %s: %s" %
-                           (exiturl(exit_fpr), err))
+            logger.warning("urlopen() failed for %s: %s" % (exiturl, err))
             continue
 
         if not data:
             logger.warning("No data received from <%s> over %s." %
-                           (url, exiturl(exit_fpr)))
+                           (url, exiturl))
             continue
 
         file_name = url.split("/")[-1]
@@ -216,13 +192,21 @@ def probe(exit_fpr, _):
 
             logger.critical("File \"%s\" differs from reference file \"%s\".  "
                             "Downloaded over exit relay %s." %
-                            (tmp_file, orig_file, exiturl(exit_fpr)))
+                            (tmp_file, orig_file, exiturl))
 
         else:
             logger.debug("File \"%s\" fetched over %s as expected." %
-                         (tmp_file, exiturl(exit_fpr)))
+                         (tmp_file, exiturl))
 
             os.remove(tmp_file)
+
+
+def probe(exit_fpr, run_python_over_tor, run_cmd_over_tor):
+    """
+    Probe the given exit relay and look for modified binaries.
+    """
+
+    run_python_over_tor(run_check, exit_fpr)
 
 
 def main():
@@ -238,4 +222,4 @@ def main():
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())
