@@ -1,4 +1,4 @@
-# Copyright 2013, 2014 Philipp Winter <phw@nymity.ch>
+# Copyright 2013-2015 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
 #
@@ -37,6 +37,73 @@ import log
 logger = log.get_logger()
 
 
+class Attacher(object):
+
+    """
+    Attaches streams to circuits.
+    """
+
+    def __init__(self, controller):
+
+        # Maps port to function that attached a stream to a circuit.
+
+        self.unattached = {}
+        self.controller = controller
+
+    def prepare(self, port, circuit_id=None, stream_id=None):
+        """
+        Prepare for attaching a stream to a circuit.
+
+        If we already have the corresponding stream/circuit, we can attach it
+        now.  Otherwise, the method _attach() is partially executed and stored,
+        so it can be attached later.
+        """
+
+        assert ((circuit_id is not None) and (stream_id is None)) or \
+               ((circuit_id is None) and (stream_id is not None))
+
+        # Check if we can already attach.
+
+        if port in self.unattached:
+            attach = self.unattached[port]
+
+            if circuit_id:
+                attach(circuit_id=circuit_id)
+            else:
+                attach(stream_id=stream_id)
+
+            del self.unattached[port]
+        else:
+            # We maintain a dictionary of source ports that point to their
+            # respective attaching function.  At this point we only know either
+            # the stream or the circuit ID, so we store a partially executed
+            # function.
+
+            if circuit_id:
+                partially_attached = functools.partial(self._attach,
+                                                       circuit_id=circuit_id)
+                self.unattached[port] = partially_attached
+            else:
+                partially_attached = functools.partial(self._attach,
+                                                       stream_id=stream_id)
+                self.unattached[port] = partially_attached
+
+        logger.debug("Pending attachers: %d." % len(self.unattached))
+
+    def _attach(self, stream_id=None, circuit_id=None):
+        """
+        Attach a stream to a circuit.
+        """
+
+        logger.debug("Attempting to attach stream %s to circuit %s." %
+                     (stream_id, circuit_id))
+
+        try:
+            self.controller.attach_stream(stream_id, circuit_id)
+        except stem.OperationFailed as err:
+            logger.warning("Failed to attach stream because: %s" % err)
+
+
 def decorator(queue, orig_socket, module, circ_id, *module_args):
 
     def wrapper():
@@ -70,8 +137,8 @@ class EventHandler(object):
     def __init__(self, controller, module, socks_port, stats):
 
         self.stats = stats
-        self.attachers = {}
         self.controller = controller
+        self.attacher = Attacher(controller)
         self.module = module
         self.origsock = socket.socket
         self.manager = multiprocessing.Manager()
@@ -85,58 +152,6 @@ class EventHandler(object):
 
         mysocks.setdefaultproxy(mysocks.PROXY_TYPE_SOCKS5,
                                 "127.0.0.1", socks_port)
-
-    def prepare_attach(self, port, circuit_id=None, stream_id=None):
-        """
-        Prepare for attaching a stream to a circuit.
-
-        If we already have the corresponding stream/circuit, it can be attached
-        right now.  Otherwise, the method _attach_stream() is partially
-        executed and stored so it can be attached at a later point.
-        """
-
-        assert ((circuit_id is not None) and (stream_id is None)) or \
-               ((circuit_id is None) and (stream_id is not None))
-
-        # Check if we can attach right now.
-
-        if port in self.attachers:
-            attacher = self.attachers[port]
-
-            if circuit_id:
-                attacher(circuit_id=circuit_id)
-            else:
-                attacher(stream_id=stream_id)
-
-            del self.attachers[port]
-        else:
-            # We maintain a dictionary of source ports which point to their
-            # according attaching function.  At this point we only know either
-            # stream or circuit ID, so we store a partially executed function.
-
-            if circuit_id:
-                self.attachers[port] = functools.partial(self._attach_stream,
-                                                         circuit_id=circuit_id)
-            else:
-                self.attachers[port] = functools.partial(self._attach_stream,
-                                                         stream_id=stream_id)
-
-        logger.debug("Pending attachers: %d." % len(self.attachers))
-
-    def _attach_stream(self, stream_id=None, circuit_id=None):
-        """
-        Attach a stream to a circuit.
-        """
-
-        logger.debug("Attaching stream %s to circuit %s." %
-                     (stream_id, circuit_id))
-
-        try:
-            self.controller.attach_stream(stream_id, circuit_id)
-        except stem.OperationFailed as err:
-            logger.warning("Couldn't attach stream because: %s" % str(err))
-
-        self.check_finished()
 
     def queue_reader(self):
         """
@@ -173,7 +188,8 @@ class EventHandler(object):
                 _, port = sockname[0], int(sockname[1])
                 logger.debug("Read from queue: %s, %s" % (circ_id,
                                                           str(sockname)))
-                self.prepare_attach(port, circuit_id=circ_id)
+                self.attacher.prepare(port, circuit_id=circ_id)
+                self.check_finished()
 
     def check_finished(self):
         """
@@ -268,8 +284,8 @@ class EventHandler(object):
             return
 
         logger.debug("Adding attacher for new stream %s." % stream_event.id)
-
-        self.prepare_attach(port, stream_id=stream_event.id)
+        self.attacher.prepare(port, stream_id=stream_event.id)
+        self.check_finished()
 
     def new_event(self, event):
         """
