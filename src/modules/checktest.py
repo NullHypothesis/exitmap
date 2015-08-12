@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright 2013, 2014 Philipp Winter <phw@nymity.ch>
+# Copyright 2013-2015 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
 #
@@ -18,12 +18,14 @@
 # along with exitmap.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Module to detect false negatives for https://check.torproject.org.
+Module to detect false negatives for <https://check.torproject.org>.
 """
 
+import sys
 import urllib2
 
 import log
+from util import exiturl
 
 logger = log.get_logger()
 
@@ -33,13 +35,10 @@ logger = log.get_logger()
 destinations = [("check.torproject.org", 443)]
 
 
-def probe(exit_fpr, cmd):
+def fetch_page(exit_fpr):
     """
-    Probe the given exit relay and look for check.tp.o false negatives.
+    Fetch check.torproject.org and see if we are using Tor.
     """
-
-    logger.debug("Now probing exit relay "
-                 "<https://globe.torproject.org/#/relay/%s>." % exit_fpr)
 
     data = None
 
@@ -56,12 +55,19 @@ def probe(exit_fpr, cmd):
 
     identifier = "Congratulations. This browser is configured to use Tor."
 
+    url = exiturl(exit_fpr)
     if not (identifier in data):
-        logger.error("Detected false negative for "
-                     "<https://globe.torproject.org/#/relay/%s>." % exit_fpr)
+        logger.error("Detected false negative for %s." % url)
     else:
-        logger.debug("Exit relay <https://globe.torproject.org/#/relay/%s> "
-                     "passed the check test." % exit_fpr)
+        logger.debug("Exit relay %s passed the check test." % url)
+
+
+def probe(exit_fpr, run_python_over_tor, run_cmd_over_tor):
+    """
+    Probe the given exit relay and look for check.tp.o false negatives.
+    """
+
+    run_python_over_tor(fetch_page, exit_fpr)
 
 
 def main():
@@ -75,4 +81,4 @@ def main():
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

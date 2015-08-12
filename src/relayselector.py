@@ -45,10 +45,13 @@ def parse_cmd_args():
     parser.add_argument("-b", "--badexit", action="store_true", default=None,
                         help="Select bad exit relays.")
 
+    parser.add_argument("-g", "--goodexit", action="store_true", default=None,
+                        help="Select non-bad exit relays.")
+
     parser.add_argument("-c", "--countrycode", type=str, default=None,
                         help="Two-letter country code to select.")
 
-    parser.add_argument("-d", "--data-dir", type=str, default=None,
+    parser.add_argument("data_dir", metavar="DATA_DIR", type=str, default=None,
                         help="Tor's data directory.")
 
     parser.add_argument("-v", "--version", type=str, default=None,
@@ -80,7 +83,7 @@ def get_fingerprints(cached_consensus_path, exclude=[]):
     return fingerprints
 
 
-def get_exits(data_dir, country_code=None, bad_exit=False,
+def get_exits(data_dir, country_code=None, bad_exit=False, good_exit=False,
               version=None, nickname=None, address=None, hosts=[]):
     """
     Extract exit relays with given attributes from consensus.
@@ -88,6 +91,8 @@ def get_exits(data_dir, country_code=None, bad_exit=False,
     Attempts to get the consensus from the provided data directory and extracts
     all relays with the given attributes.
     """
+
+    assert not (bad_exit and good_exit)
 
     cached_consensus = {}
     have_exit_policy = {}
@@ -161,8 +166,8 @@ def get_exits(data_dir, country_code=None, bad_exit=False,
         exit_candidates = filter(lambda desc: stem.Flag.BADEXIT in
                                  cached_consensus[desc.fingerprint].flags,
                                  exit_candidates)
-    else:
-        exit_candidates = filter(lambda desc: not stem.Flag.BADEXIT in
+    elif good_exit:
+        exit_candidates = filter(lambda desc: stem.Flag.BADEXIT not in
                                  cached_consensus[desc.fingerprint].flags,
                                  exit_candidates)
 
@@ -188,7 +193,8 @@ def main():
     args = parse_cmd_args()
 
     _, exits = get_exits(args.data_dir, args.countrycode, args.badexit,
-                         args.version, args.nickname, args.address)
+                         args.goodexit, args.version, args.nickname,
+                         args.address)
     for e in exits:
         print("https://atlas.torproject.org/#details/%s" % e)
 
