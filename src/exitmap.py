@@ -164,6 +164,17 @@ def parse_cmd_args():
                              "is used as first hop.  This relay should be "
                              "under your control.")
 
+    exits = parser.add_mutually_exclusive_group()
+
+    exits.add_argument("-b", "--bad-exits", action="store_true",
+                       help="Only scan exit relays that have the BadExit "
+                            "flag.  By default, only good exits are scanned.")
+
+    exits.add_argument("-l", "--all-exits", action="store_true",
+                       help="Scan all exits, including those that have the "
+                            "BadExit flag.  By default, only good exits are "
+                            "scanned.")
+
     parser.add_argument("-V", "--version", action="version",
                         version="%(prog)s 2015.04.06")
 
@@ -258,8 +269,11 @@ def select_exits(args, module):
         exit_relays = [args.exit]
         total = len(exit_relays)
     else:
+        good_exits = False if (args.all_exits or args.bad_exits) else True
         total, exit_relays = relayselector.get_exits(args.tor_dir,
                                                      country_code=args.country,
+                                                     bad_exit=args.bad_exits,
+                                                     good_exit=good_exits,
                                                      hosts=hosts)
 
     logger.debug("Successfully selected exit relays after %s." %
