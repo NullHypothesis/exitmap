@@ -174,9 +174,9 @@ class EventHandler(object):
                 self.stats.print_progress()
                 self.check_finished()
             else:
-                _, port = sockname[0], int(sockname[1])
                 logger.debug("Read from queue: %s, %s" % (circ_id,
                                                           str(sockname)))
+                port = int(sockname[1])
                 self.attacher.prepare(port, circuit_id=circ_id)
                 self.check_finished()
 
