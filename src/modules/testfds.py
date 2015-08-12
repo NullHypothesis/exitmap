@@ -22,6 +22,7 @@ This module attempts to fetch a simple web page.  If this succeeds, we know
 that the relay (probably) has enough file descriptors.
 """
 
+import sys
 import re
 import urllib2
 import functools
@@ -82,4 +83,4 @@ def main():
     return 0
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

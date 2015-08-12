@@ -33,6 +33,7 @@ Then run:
 
 """
 
+import sys
 import os
 import urllib2
 import tempfile
@@ -221,4 +222,4 @@ def main():
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

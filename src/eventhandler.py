@@ -30,7 +30,6 @@ from stem import StreamStatus
 from stem import CircStatus
 
 import command
-import mysocks
 import util
 import log
 
@@ -104,7 +103,7 @@ class Attacher(object):
             logger.warning("Failed to attach stream because: %s" % err)
 
 
-def decorator(queue, orig_socket, module, circ_id, *module_args):
+def decorator(queue, module, circ_id, *module_args):
 
     def wrapper():
 
@@ -142,9 +141,6 @@ class EventHandler(object):
         queue_thread = threading.Thread(target=self.queue_reader)
         queue_thread.daemon = False
         queue_thread.start()
-
-        mysocks.setdefaultproxy(mysocks.PROXY_TYPE_SOCKS5,
-                                "127.0.0.1", socks_port)
 
     def queue_reader(self):
         """
