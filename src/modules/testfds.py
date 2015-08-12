@@ -25,7 +25,6 @@ that the relay (probably) has enough file descriptors.
 import sys
 import re
 import urllib2
-import functools
 
 import log
 from util import exiturl
