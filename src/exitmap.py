@@ -19,6 +19,7 @@
 Performs a task over (a subset of) all Tor exit relays.
 """
 
+import sys
 import os
 import time
 import socket
@@ -63,26 +64,30 @@ def bootstrap_tor(args):
     ports = {}
     partial_parse_log_lines = functools.partial(util.parse_log_lines, ports)
 
-    proc = stem.process.launch_tor_with_config(
-        config={
-            "SOCKSPort": "auto",
-            "ControlPort": "auto",
-            "DataDirectory": args.tor_dir,
-            "CookieAuthentication": "1",
-            "LearnCircuitBuildTimeout": "0",
-            "CircuitBuildTimeout": "40",
-            "__DisablePredictedCircuits": "1",
-            "__LeaveStreamsUnattached": "1",
-            "FetchHidServDescriptors": "0",
-            "UseMicroDescriptors": "0",
-        },
-        timeout=90,
-        take_ownership=True,
-        completion_percent=80,
-        init_msg_handler=partial_parse_log_lines,
-    )
-
-    logger.info("Successfully started Tor process (PID=%d)." % proc.pid)
+    try:
+        proc = stem.process.launch_tor_with_config(
+            config={
+                "SOCKSPort": "auto",
+                "ControlPort": "auto",
+                "DataDirectory": args.tor_dir,
+                "CookieAuthentication": "1",
+                "LearnCircuitBuildTimeout": "0",
+                "CircuitBuildTimeout": "40",
+                "__DisablePredictedCircuits": "1",
+                "__LeaveStreamsUnattached": "1",
+                "FetchHidServDescriptors": "0",
+                "UseMicroDescriptors": "0",
+                "PathsNeededToBuildCircuits": "0.95",
+            },
+            timeout=180,
+            take_ownership=True,
+            completion_percent=80,
+            init_msg_handler=partial_parse_log_lines,
+        )
+        logger.info("Successfully started Tor process (PID=%d)." % proc.pid)
+    except OSError as err:
+        logger.error("Couldn't launch Tor in time.  Maybe try again?")
+        sys.exit(1)
 
     return ports["socks"], ports["control"]
 
