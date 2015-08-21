@@ -86,7 +86,7 @@ def bootstrap_tor(args):
         )
         logger.info("Successfully started Tor process (PID=%d)." % proc.pid)
     except OSError as err:
-        logger.error("Couldn't launch Tor in time.  Maybe try again?")
+        logger.error("Couldn't launch Tor: %s.  Maybe try again?" % err)
         sys.exit(1)
 
     return ports["socks"], ports["control"]
