@@ -1,2 +1,8 @@
+2015-08-23: Changes in version 2015.08.23:
+	- Exclude bad exits by default when selecting exit relays.
+	- Pass torifying execution environments to modules.
+	- Set PathsNeededToBuildCircuits to 0.95.
+	- Replace mysocks/SocksiPy with home-made torsocks.
+
 2015-04-06: Changes in version 2015.04.06:
 	- Publish first release.
