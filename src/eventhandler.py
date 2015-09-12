@@ -103,9 +103,18 @@ class Attacher(object):
             logger.warning("Failed to attach stream because: %s" % err)
 
 
-def decorator(queue, module, circ_id, *module_args):
+def module_closure(queue, module, circ_id, *module_args):
+    """
+    Return function that runs the module and then informs event handler.
+    """
 
-    def wrapper():
+    def func():
+        """
+        Run the module and then inform the event handler.
+
+        The invoking process keeps track of which circuits finished.  Once we
+        are done, we send a signal over the queue to let the process know.
+        """
 
         try:
             module(*module_args)
@@ -115,7 +124,7 @@ def decorator(queue, module, circ_id, *module_args):
         except KeyboardInterrupt:
             pass
 
-    return wrapper
+    return func
 
 
 class EventHandler(object):
@@ -237,12 +246,12 @@ class EventHandler(object):
                                            circ_event.id,
                                            socket.socket)
 
-        module = decorator(self.queue, self.module.probe,
-                           circ_event.id, exit_fpr,
-                           command.run_python_over_tor(self.queue,
-                                                       circ_event.id,
-                                                       self.socks_port),
-                           run_cmd_over_tor)
+        module = module_closure(self.queue, self.module.probe,
+                                circ_event.id, exit_fpr,
+                                command.run_python_over_tor(self.queue,
+                                                            circ_event.id,
+                                                            self.socks_port),
+                                run_cmd_over_tor)
 
         proc = multiprocessing.Process(target=module)
         proc.daemon = True
