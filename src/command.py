@@ -23,6 +23,7 @@ import os
 import socket
 import threading
 import subprocess
+import tempfile
 
 import log
 import util
@@ -64,10 +65,7 @@ class Command(object):
     Provide an abstraction for a shell command which is to be run.
     """
 
-    def __init__(self, torsocks_conf, queue, circ_id, origsock):
-
-        os.environ["TORSOCKS_CONF_FILE"] = torsocks_conf
-        os.environ["TORSOCKS_LOG_LEVEL"] = "5"
+    def __init__(self, queue, circ_id, origsock):
 
         self.process = None
         self.stdout = None
@@ -146,11 +144,16 @@ class Command(object):
         # We run the given command in a separate thread.  The main thread will
         # kill the process if it does not finish before the given timeout.
 
-        thread = threading.Thread(target=self.invoke_process,
-                                  args=(command,))
-        thread.daemon = True
-        thread.start()
-        thread.join(timeout)
+        with tempfile.NamedTemporaryFile(prefix="torsocks_") as fd:
+            logger.debug("Created temporary file %s" % fd.name)
+            os.environ["TORSOCKS_CONF_FILE"] = fd.name
+            os.environ["TORSOCKS_LOG_LEVEL"] = "5"
+
+            thread = threading.Thread(target=self.invoke_process,
+                                      args=(command,))
+            thread.daemon = True
+            thread.start()
+            thread.join(timeout)
 
         # Attempt to kill the process if it did not finish in time.
 

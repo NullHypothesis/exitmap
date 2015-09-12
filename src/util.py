@@ -20,11 +20,9 @@ Provides utility functions.
 """
 
 import re
-import os
 import urllib2
 import json
 import tempfile
-import atexit
 
 from stem.descriptor.reader import DescriptorReader
 
@@ -35,27 +33,6 @@ logger = log.get_logger()
 # Holds the directory to which we can write temporary analysis results.
 
 analysis_dir = None
-
-
-def create_temp_torsocks_conf(socks_port):
-    """
-    Write a temporary config file for torsocks to disk.
-
-    The name of the temporary file is returned and the file is removed when the
-    program finishes.
-    """
-
-    content = "TorAddress 127.0.0.1\nTorPort %d\n" % socks_port
-
-    fd, file_path = tempfile.mkstemp(prefix="torsocks_")
-    os.write(fd, content)
-    os.close(fd)
-
-    # Remove the file when the program finishes.
-
-    atexit.register(os.unlink, file_path)
-
-    return file_path
 
 
 def parse_log_lines(ports, log_line):

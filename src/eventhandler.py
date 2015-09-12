@@ -233,9 +233,7 @@ class EventHandler(object):
         logger.debug("Circuit for exit relay \"%s\" is built.  "
                      "Now invoking probing module." % exit_fpr)
 
-        torsocks_file = util.create_temp_torsocks_conf(self.socks_port)
-        run_cmd_over_tor = command.Command(torsocks_file,
-                                           self.queue,
+        run_cmd_over_tor = command.Command(self.queue,
                                            circ_event.id,
                                            socket.socket)
 
