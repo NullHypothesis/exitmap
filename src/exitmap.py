@@ -214,9 +214,6 @@ def main():
 
     if args.tor_dir and not os.path.exists(args.tor_dir):
         os.makedirs(args.tor_dir)
-    if args.analysis_dir and not os.path.exists(args.analysis_dir):
-        os.makedirs(args.analysis_dir)
-    util.analysis_dir = args.analysis_dir
 
     logger.setLevel(logging.__dict__[args.verbosity.upper()])
 
@@ -245,6 +242,11 @@ def main():
         return 1
 
     for module_name in args.module:
+
+        if args.analysis_dir is not None:
+            datestr = time.strftime("%Y-%m-%d_%H:%M:%S%z") + "_" + module_name
+            util.analysis_dir = os.path.join(args.analysis_dir, datestr)
+
         try:
             run_module(module_name, args, controller, socks_port, stats)
         except error.ExitSelectionError as err:
