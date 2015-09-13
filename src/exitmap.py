@@ -240,9 +240,9 @@ def main():
     cached_consensus_path = os.path.join(args.tor_dir, "cached-consensus")
     if args.first_hop and (not util.relay_in_consensus(args.first_hop,
                                                        cached_consensus_path)):
-        raise error.PathSelectionError("Given first hop \"%s\" not found in "
-                                       "consensus.  Is it offline?" %
-                                       args.first_hop)
+        logger.critical("Given first hop \"%s\" not found in consensus.  Is it "
+                        "offline?" % args.first_hop)
+        return 1
 
     for module_name in args.module:
         try:
