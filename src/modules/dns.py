@@ -20,7 +20,6 @@ Module to detect malfunctioning DNS resolution.
 """
 
 import log
-import socket
 import torsocks
 import socket
 import error
