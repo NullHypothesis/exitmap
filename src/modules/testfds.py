@@ -34,12 +34,12 @@ logger = log.get_logger()
 destinations = [("people.torproject.org", 443)]
 
 
-def fetch_page(exit_fpr):
+def fetch_page(exit_desc):
 
     expected = "This file is to check if your exit relay has enough file " \
                "descriptors to fetch it."
 
-    exit_url = exiturl(exit_fpr)
+    exit_url = exiturl(exit_desc.fingerprint)
 
     logger.debug("Probing exit relay %s." % exit_url)
 
@@ -48,7 +48,8 @@ def fetch_page(exit_fpr):
         data = urllib2.urlopen("https://people.torproject.org/~phw/check_file",
                                timeout=10).read()
     except Exception as err:
-        logger.warning("urllib2.urlopen for %s says: %s." % (exit_fpr, err))
+        logger.warning("urllib2.urlopen for %s says: %s." %
+                       (exit_desc.fingerprint, err))
         return
 
     if not data:
@@ -64,12 +65,12 @@ def fetch_page(exit_fpr):
         logger.debug("Exit relay %s worked fine." % exit_url)
 
 
-def probe(exit_fpr, run_python_over_tor, run_cmd_over_tor):
+def probe(exit_desc, run_python_over_tor, run_cmd_over_tor):
     """
     Attempts to fetch a small web page and yells if this fails.
     """
 
-    run_python_over_tor(fetch_page, exit_fpr)
+    run_python_over_tor(fetch_page, exit_desc)
 
 
 def main():

@@ -30,13 +30,14 @@ logger = log.get_logger()
 destinations = None
 
 
-def resolve(exit_fpr, domain, whitelist):
+def resolve(exit_desc, domain, whitelist):
     """
     Resolve a `domain' and compare it to the `whitelist'.
 
     If the domain is not part of the whitelist, an error is logged.
     """
 
+    exit = exiturl(exit_desc.fingerprint)
     sock = torsocks.torsocket()
     sock.settimeout(10)
 
@@ -46,22 +47,21 @@ def resolve(exit_fpr, domain, whitelist):
         ipv4 = sock.resolve(domain)
     except error.SOCKSv5Error as err:
         logger.debug("Exit relay %s could not resolve IPv4 address for "
-                     "\"%s\" because: %s" % (exiturl(exit_fpr), domain, err))
+                     "\"%s\" because: %s" % (exit, domain, err))
         return
     except socket.timeout as err:
-        logger.debug("Socket over exit relay %s timed out: %s" %
-                     (exiturl(exit_fpr), err))
+        logger.debug("Socket over exit relay %s timed out: %s" % (exit, err))
         return
 
     if ipv4 not in whitelist:
         logger.critical("Exit relay %s returned unexpected IPv4 address %s "
-                        "for domain %s" % (exiturl(exit_fpr), ipv4, domain))
+                        "for domain %s" % (exit, ipv4, domain))
     else:
         logger.debug("IPv4 address of domain %s as expected for %s." %
-                     (domain, exiturl(exit_fpr)))
+                     (domain, exit))
 
 
-def probe(exit_fpr, run_python_over_tor, run_cmd_over_tor):
+def probe(exit_desc, run_python_over_tor, run_cmd_over_tor):
     """
     Probe the given exit relay and check if all domains resolve as expected.
     """
@@ -85,4 +85,4 @@ def probe(exit_fpr, run_python_over_tor, run_cmd_over_tor):
     }
 
     for domain in domains.iterkeys():
-        run_python_over_tor(resolve, exit_fpr, domain, domains[domain])
+        run_python_over_tor(resolve, exit_desc, domain, domains[domain])

@@ -57,7 +57,7 @@ destinations = [("live.sysinternals.com", 80)]
 # Must provide a Download link
 check_files = {
     "http://live.sysinternals.com/psexec.exe": [None, None],
-    #"http://www.ntcore.com/files/ExplorerSuite.exe": [None, None],
+    # "http://www.ntcore.com/files/ExplorerSuite.exe": [None, None],
 }
 
 # Set UserAgent
@@ -149,12 +149,12 @@ def files_identical(observed_file, original_file):
     return original_data == observed_data
 
 
-def run_check(exit_fpr):
+def run_check(exit_desc):
     """
     Download file and check if its checksum is as expected.
     """
 
-    exiturl = util.exiturl(exit_fpr)
+    exiturl = util.exiturl(exit_desc.fingerprint)
 
     for url, file_info in check_files.iteritems():
 
@@ -180,7 +180,7 @@ def run_check(exit_fpr):
 
         file_name = url.split("/")[-1]
         _, tmp_file = tempfile.mkstemp(prefix="exitmap_%s_%s_" %
-                                       (exit_fpr, file_name))
+                                       (exit_desc.fingerprint, file_name))
 
         with open(tmp_file, "wb") as fd:
             fd.write(data)
@@ -201,12 +201,12 @@ def run_check(exit_fpr):
             os.remove(tmp_file)
 
 
-def probe(exit_fpr, run_python_over_tor, run_cmd_over_tor):
+def probe(exit_desc, run_python_over_tor, run_cmd_over_tor):
     """
     Probe the given exit relay and look for modified binaries.
     """
 
-    run_python_over_tor(run_check, exit_fpr)
+    run_python_over_tor(run_check, exit_desc)
 
 
 def main():

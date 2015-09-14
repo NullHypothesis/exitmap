@@ -36,6 +36,24 @@ import log
 logger = log.get_logger()
 
 
+def get_relay_desc(controller, fpr):
+    """
+    Return the descriptor for the given relay fingerprint."
+    """
+
+    desc = None
+    try:
+        desc = controller.get_server_descriptor(relay=fpr)
+    except stem.DescriptorUnavailable as err:
+        logger.warning("Descriptor for %s not available: %s" % (fpr, err))
+    except stem.ControllerError as err:
+        logger.warning("Unable to query for %d: %s" % (fpr, err))
+    except ValueError:
+        logger.warning("%s is malformed.  Is it a relay fingerprint?" % fpr)
+
+    return desc
+
+
 class Attacher(object):
 
     """
@@ -246,8 +264,13 @@ class EventHandler(object):
                                            circ_event.id,
                                            socket.socket)
 
+        exit_desc = get_relay_desc(self.controller, exit_fpr)
+        if exit_desc is None:
+            self.controller.close_circuit(circ_event.id)
+            return
+
         module = module_closure(self.queue, self.module.probe,
-                                circ_event.id, exit_fpr,
+                                circ_event.id, exit_desc,
                                 command.run_python_over_tor(self.queue,
                                                             circ_event.id,
                                                             self.socks_port),

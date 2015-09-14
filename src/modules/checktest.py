@@ -35,7 +35,7 @@ logger = log.get_logger()
 destinations = [("check.torproject.org", 443)]
 
 
-def fetch_page(exit_fpr):
+def fetch_page(exit_desc):
     """
     Fetch check.torproject.org and see if we are using Tor.
     """
@@ -55,19 +55,19 @@ def fetch_page(exit_fpr):
 
     identifier = "Congratulations. This browser is configured to use Tor."
 
-    url = exiturl(exit_fpr)
+    url = exiturl(exit_desc.fingerprint)
     if not (identifier in data):
         logger.error("Detected false negative for %s." % url)
     else:
         logger.debug("Exit relay %s passed the check test." % url)
 
 
-def probe(exit_fpr, run_python_over_tor, run_cmd_over_tor):
+def probe(exit_desc, run_python_over_tor, run_cmd_over_tor):
     """
     Probe the given exit relay and look for check.tp.o false negatives.
     """
 
-    run_python_over_tor(fetch_page, exit_fpr)
+    run_python_over_tor(fetch_page, exit_desc)
 
 
 def main():
