@@ -49,6 +49,35 @@ class TestUtil(unittest.TestCase):
         self.assertEqual(util.get_source_port("SOURCE_ADDR=1.1.1.1:"
                                               "65535"), 65535)
 
+    def test_exiturl(self):
+        self.assertEqual(util.exiturl("foo"), "<https://atlas.torproject.or"
+                         "g/#details/foo>")
+        self.assertEqual(util.exiturl(4), "<https://atlas.torproject.org/#det"
+                         "ails/4>")
+
+    def test_extract_pattern(self):
+        extract_pattern1 = util.extract_pattern("Connection on fd 4 originat"
+                                                "ing from 444:0000", "Connec"
+                                                "tion on fd [0-9]+ originati"
+                                                "ng from [^:]+:([0-9]{1,5})")
+        self.assertEqual(extract_pattern1, "0000")
+
+    def test_new_request(self):
+        result = util.new_request("https://atlas.torproject.org", "test")
+        self.assertEqual("https://atlas.torproject.org", result.get_full_url())
+        self.assertTrue(result.has_header("User-agent"))
+        self.assertTrue(result.has_header("Accept"))
+        self.assertTrue(result.has_header("Accept-language"))
+        self.assertTrue(result.has_header("Accept-encoding"))
+        self.assertTrue(result.has_header("Connection"))
+
+    def test_parse_log_lines(self):
+        ports = {"socks": -1, "control": -1}
+        util.parse_log_lines(ports, "Socks listener listening on port 8000.")
+        util.parse_log_lines(ports, "Control listener listening on port 9000.")
+        self.assertEqual(ports["socks"], 8000)
+        self.assertEqual(ports["control"], 9000)
+
 
 class TestStats(unittest.TestCase):
     """Test the stats module."""
