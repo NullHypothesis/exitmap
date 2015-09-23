@@ -46,6 +46,9 @@ def parse_log_lines(ports, log_line):
 
     logger.debug("Tor says: %s" % log_line)
 
+    if re.search(r"^.*Bootstrapped \d+%.*$", log_line):
+        logger.info(re.sub(r"^.*(Bootstrapped \d+%.*)$", r"Tor \1", log_line))
+
     socks_pattern = "Socks listener listening on port ([0-9]{1,5})."
     control_pattern = "Control listener listening on port ([0-9]{1,5})."
 

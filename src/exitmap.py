@@ -79,7 +79,7 @@ def bootstrap_tor(args):
                 "UseMicroDescriptors": "0",
                 "PathsNeededToBuildCircuits": "0.95",
             },
-            timeout=180,
+            timeout=300,
             take_ownership=True,
             completion_percent=80,
             init_msg_handler=partial_parse_log_lines,
