@@ -21,12 +21,7 @@ Implements unit tests.
 """
 
 import unittest
-
-import stem.control
-from stem import CircStatus
-
 import util
-import stats
 
 
 class TestUtil(unittest.TestCase):
@@ -77,30 +72,6 @@ class TestUtil(unittest.TestCase):
         util.parse_log_lines(ports, "Control listener listening on port 9000.")
         self.assertEqual(ports["socks"], 8000)
         self.assertEqual(ports["control"], 9000)
-
-
-class TestStats(unittest.TestCase):
-    """Test the stats module."""
-
-    def setUp(self):
-        self.stats = stats.Statistics()
-
-    def test_stats(self):
-        self.stats.print_progress(sampling=0)
-        self.stats.print_progress
-        self.assertTrue(str(self.stats))
-
-        circ_event = stem.response.events.CircuitEvent("foo", "bar")
-        circ_event.status = CircStatus.FAILED
-        circ_event.reason = "foo"
-
-        self.stats.update_circs(circ_event)
-        self.assertEqual(self.stats.failed_circuits, 1)
-
-        circ_event.status = CircStatus.BUILT
-
-        self.stats.update_circs(circ_event)
-        self.assertEqual(self.stats.successful_circuits, 1)
 
 
 if __name__ == '__main__':
