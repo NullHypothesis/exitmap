@@ -22,7 +22,10 @@ Module to detect false negatives for <https://check.torproject.org>.
 """
 
 import sys
-import urllib2
+try:
+    import urllib2
+except ImportError:
+    import urllib.request as urllib2
 
 import log
 from util import exiturl
@@ -43,8 +46,9 @@ def fetch_page(exit_desc):
     data = None
 
     try:
-        data = urllib2.urlopen("https://check.torproject.org",
-                               timeout=10).read()
+        f = urllib2.urlopen("https://check.torproject.org",
+                            timeout=10).read()
+        data = f.decode('utf-8')
     except Exception as err:
         logger.debug("urllib2.urlopen says: %s" % err)
 

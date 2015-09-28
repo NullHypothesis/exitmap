@@ -35,7 +35,10 @@ Then run:
 
 import sys
 import os
-import urllib2
+try:
+    import urllib2
+except ImportError:
+    import urllib.request as urllib2
 import tempfile
 import log
 import hashlib
