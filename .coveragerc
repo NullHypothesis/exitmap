@@ -1,0 +1,5 @@
+[run]
+omit =
+    src/run_tests.py
+    src/test_*
+    src/modules/*

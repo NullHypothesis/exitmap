@@ -106,6 +106,12 @@ Don't like `exitmap`?  Then have a look at
 [`torscanner`](https://code.google.com/p/torscanner/), or
 [`DetecTor`](http://detector.io/DetecTor.html).
 
+Tests
+-----
+
+    $ pip install -r requirements-dev.txt
+    $ py.test --cov-report term-missing --cov-config .coveragerc --cov=src src
+
 Feedback
 --------
 
