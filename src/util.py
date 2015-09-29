@@ -21,7 +21,10 @@ Provides utility functions.
 
 import os
 import re
-import urllib2
+try:
+    import urllib2
+except ImportError:
+    import urllib.request as urllib2
 import json
 import tempfile
 import errno
@@ -125,7 +128,8 @@ def get_relays_in_country(country_code):
                 "from Onionoo." % country_code)
 
     try:
-        data = urllib2.urlopen("%s%s" % (onionoo_url, country_code)).read()
+        f = urllib2.urlopen("%s%s" % (onionoo_url, country_code))
+        data = f.read().decode('utf-8')
     except Exception as err:
         logger.warning("urlopen() failed: %s" % err)
         return []

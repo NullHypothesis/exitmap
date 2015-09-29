@@ -24,7 +24,10 @@ that the relay (probably) has enough file descriptors.
 
 import sys
 import re
-import urllib2
+try:
+    import urllib2
+except ImportError:
+    import urllib.request as urllib2
 
 import log
 from util import exiturl
