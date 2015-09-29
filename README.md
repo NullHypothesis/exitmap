@@ -36,7 +36,7 @@ Installation
 The easiest might be to use `pip` in combination with the provided
 requirements.txt file:
 
-    $ pip install --user -r requirements.txt
+    $ pip install -r requirements.txt
 
 Running exitmap
 ---------------
