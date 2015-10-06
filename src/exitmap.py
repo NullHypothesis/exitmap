@@ -141,6 +141,10 @@ def parse_cmd_args():
                        help="Only probe the exit relay which has the given "
                             "20-byte fingerprint.")
 
+    group.add_argument("-E", "--exit-file", type=str, default=None,
+                       help="File containing the 20-byte fingerprints "
+                            "of exit relays to probe, one per line.")
+
     parser.add_argument("-d", "--build-delay", type=float, default=3,
                         help="Wait for the given delay (in seconds) between "
                              "circuit builds.  The default is 3.")
@@ -270,11 +274,20 @@ def select_exits(args, module):
         hosts = [(socket.gethostbyname(host), port) for
                  (host, port) in module.destinations]
 
-    # '-e' was used to specify a single exit relay.
-
     if args.exit:
+        # '-e' was used to specify a single exit relay.
+
         exit_relays = [args.exit]
         total = len(exit_relays)
+    elif args.exit_file:
+        # '-E' was used to specify a file containing exit relays
+
+        try:
+           exit_relays = [line.strip() for line in open(args.exit_file)]
+           total = len(exit_relays)
+        except Exception as err:
+           logger.error("Could not read file %s", args.exit_file)
+           sys.exit(1)
     else:
         good_exits = False if (args.all_exits or args.bad_exits) else True
         total, exit_relays = relayselector.get_exits(args.tor_dir,
