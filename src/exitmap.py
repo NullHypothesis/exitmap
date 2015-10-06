@@ -283,7 +283,7 @@ def select_exits(args, module):
         # '-E' was used to specify a file containing exit relays
 
         try:
-	   exit_relays = [line.strip() for line in open(args.exit_file)]
+           exit_relays = [line.strip() for line in open(args.exit_file)]
            total = len(exit_relays)
         except Exception as err:
            logger.error("Could not read file %s", args.exit_file)
