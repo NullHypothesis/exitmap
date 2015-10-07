@@ -28,6 +28,7 @@ import tempfile
 import log
 import util
 import torsocks
+import error
 
 logger = log.get_logger()
 
@@ -52,7 +53,11 @@ def run_python_over_tor(queue, circ_id, socks_port):
         orig_socket = socket.socket
         socket.socket = torsocks.torsocket
 
-        func(*args)
+        try:
+            func(*args)
+        except error.SOCKSv5Error as err:
+            logger.info(err)
+            return
 
         socket.socket = orig_socket
 

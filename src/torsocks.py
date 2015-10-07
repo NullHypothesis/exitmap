@@ -34,6 +34,18 @@ circ_id = None
 
 orig_socket = socket.socket
 
+# Server-side SOCKSv5 errors.
+socks5_errors = {
+    0x00: "Request granted",
+    0x01: "General failure",
+    0x02: "Connection not allowed by ruleset",
+    0x03: "Network unreachable",
+    0x04: "Host unreachable",
+    0x05: "Connection refused by destination host",
+    0x06: "TTL expired",
+    0x07: "Command not supported / protocol error",
+    0x08: "Address type not supported",
+}
 
 def send_queue(sock_name):
     """
@@ -138,8 +150,12 @@ class torsocket(socket.socket):
 
         resp = self.recv(4)
         if resp[1] != "\x00":
-            raise error.SOCKSv5Error("Connection failed.  Server responded "
-                                     "with 0x%s." % resp[0].encode("hex"))
+            val = int(resp[1].encode("hex"), 16)
+            if (val < 0) or (val >= len(socks5_errors)):
+                raise error.SOCKSv5Error("SOCKSv5 connection failed because: "
+                                         "%s" % socks5_errors[val])
+            else:
+                raise error.SOCKSv5Error("Unexpected SOCKSv5 error: %d" % val)
 
         # Depending on address type, get address.
 
