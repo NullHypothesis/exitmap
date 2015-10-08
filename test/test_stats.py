@@ -24,7 +24,7 @@ import unittest
 import stem.control
 from stem import CircStatus
 import sys
-sys.path.insert(0, '../src/')
+sys.path.insert(0, 'src/')
 import stats
 
 
