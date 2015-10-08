@@ -103,8 +103,9 @@ Alternatives
 Don't like `exitmap`?  Then have a look at
 [`tortunnel`](http://www.thoughtcrime.org/software/tortunnel/),
 [`SoaT`](https://gitweb.torproject.org/torflow.git/tree/NetworkScanners/ExitAuthority/README.ExitScanning),
-[`torscanner`](https://code.google.com/p/torscanner/), or
-[`DetecTor`](http://detector.io/DetecTor.html).
+[`torscanner`](https://code.google.com/p/torscanner/),
+[`DetecTor`](http://detector.io/DetecTor.html), or
+[`SelekTOR`](http://www.dazzleships.net/selektor-for-linux/).
 
 Tests
 -----
