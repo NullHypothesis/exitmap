@@ -11,6 +11,6 @@ install:
     - pip install -r requirements-dev.txt
     - pip install coveralls
 script:
-    - py.test --cov-report term-missing --cov=src src
+    - py.test --cov-report term-missing --cov=src test
 after_success:
   coveralls

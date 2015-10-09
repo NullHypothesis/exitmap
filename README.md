@@ -110,7 +110,7 @@ Tests
 -----
 
     $ pip install -r requirements-dev.txt
-    $ py.test --cov-report term-missing --cov-config .coveragerc --cov=src src
+    $ py.test --cov-report term-missing --cov-config .coveragerc --cov=src test
 
 Feedback
 --------
