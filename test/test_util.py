@@ -21,6 +21,8 @@ Implements unit tests.
 """
 
 import unittest
+import sys
+sys.path.insert(0, 'src/')
 import util
 
 
@@ -43,6 +45,7 @@ class TestUtil(unittest.TestCase):
         self.assertEqual(util.get_source_port("SOURCE_ADDR=1.1.1.1:1"), 1)
         self.assertEqual(util.get_source_port("SOURCE_ADDR=1.1.1.1:"
                                               "65535"), 65535)
+        self.assertIsNone(util.get_source_port(""))
 
     def test_exiturl(self):
         self.assertEqual(util.exiturl("foo"), "<https://atlas.torproject.or"
@@ -56,6 +59,9 @@ class TestUtil(unittest.TestCase):
                                                 "tion on fd [0-9]+ originati"
                                                 "ng from [^:]+:([0-9]{1,5})")
         self.assertEqual(extract_pattern1, "0000")
+        self.assertIsNone(util.extract_pattern("", "<https://atlas.torproj"
+                                               "ect.org/#details>"))
+
 
     def test_new_request(self):
         result = util.new_request("https://atlas.torproject.org", "test")
@@ -68,7 +74,8 @@ class TestUtil(unittest.TestCase):
 
     def test_parse_log_lines(self):
         ports = {"socks": -1, "control": -1}
-        util.parse_log_lines(ports, "Socks listener listening on port 8000.")
+        util.parse_log_lines(ports, "foo Bootstrapped 444%foo  tor"
+                             "Socks listener listening on port 8000.")
         util.parse_log_lines(ports, "Control listener listening on port 9000.")
         self.assertEqual(ports["socks"], 8000)
         self.assertEqual(ports["control"], 9000)
