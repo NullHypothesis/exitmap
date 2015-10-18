@@ -151,7 +151,7 @@ class torsocket(socket.socket):
         resp = self.recv(4)
         if resp[1] != "\x00":
             val = int(resp[1].encode("hex"), 16)
-            if (val < 0) or (val >= len(socks5_errors)):
+            if 0 <= val < len(socks5_errors):
                 raise error.SOCKSv5Error("SOCKSv5 connection failed because: "
                                          "%s" % socks5_errors[val])
             else:
