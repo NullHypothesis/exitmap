@@ -52,6 +52,9 @@ def resolve(exit_desc, domain, whitelist):
     except socket.timeout as err:
         logger.debug("Socket over exit relay %s timed out: %s" % (exit, err))
         return
+    except EOFError as err:
+        logger.debug("EOF error: %s" % err)
+        return
 
     if ipv4 not in whitelist:
         logger.critical("Exit relay %s returned unexpected IPv4 address %s "

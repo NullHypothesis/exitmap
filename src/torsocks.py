@@ -19,6 +19,7 @@
 Provide a Tor-specific SOCKSv5 interface.
 """
 
+import sys
 import struct
 import socket
 
@@ -89,6 +90,23 @@ class torsocket(socket.socket):
 
         super(torsocket, self).__init__(family, type, proto, _sock)
 
+    def _recv_all(self, num_bytes):
+        """
+        Try to read the given number of bytes.
+
+        If we are unable to read all of it, an EOFError is raised.
+        """
+
+        data = ""
+        while len(data) < num_bytes:
+            more = self.recv(num_bytes - len(data))
+            if not more:
+                raise EOFError("Could read only %d of expected %d bytes." %
+                               (len(data), num_bytes))
+            data += more
+
+        return data
+
     def _authenticate(self):
         """
         Authenticate to our SOCKSv5 server.
@@ -99,11 +117,15 @@ class torsocket(socket.socket):
         # Connect to SOCKSv5 server.  We use version 5 and one authentication
         # method, which is "no authentication".
 
-        orig_socket.connect(self, (proxy_addr, proxy_port))
+        try:
+            orig_socket.connect(self, (proxy_addr, proxy_port))
+        except Exception as err:
+            logger.warning("connect() failed: %s" % err)
+            sys.exit(1)
 
         self.sendall("\x05\x01\x00")
 
-        resp = self.recv(2)
+        resp = self._recv_all(2)
         if resp != "\x05\x00":
             raise error.SOCKSv5Error("Invalid server response: 0x%s" %
                                      resp.encode("hex"))
@@ -127,7 +149,7 @@ class torsocket(socket.socket):
         self.sendall("\x05\xf0\x00\x03%s%s%s" %
                      (chr(domain_len), domain, "\x00\x00"))
 
-        resp = self.recv(10)
+        resp = self._recv_all(10)
         if resp[:2] != "\x05\x00":
             raise error.SOCKSv5Error("Invalid server response: 0x%s" %
                                      resp[1].encode("hex"))
@@ -148,7 +170,7 @@ class torsocket(socket.socket):
         self.sendall("\x05\x01\x00\x01%s%s" %
                      (socket.inet_aton(dst_addr), struct.pack(">H", dst_port)))
 
-        resp = self.recv(4)
+        resp = self._recv_all(4)
         if resp[1] != "\x00":
             val = int(resp[1].encode("hex"), 16)
             if 0 <= val < len(socks5_errors):
@@ -160,13 +182,13 @@ class torsocket(socket.socket):
         # Depending on address type, get address.
 
         if resp[3] == "\x01":
-            self.recv(4)
+            self._recv_all(4)
         elif resp[3] == "\x03":
-            length = self.recv(1)
-            self.recv(length)
+            length = self._recv_all(1)
+            self._recv_all(length)
         else:
-            self.recv(16)
+            self._recv_all(16)
 
         # Get port.
 
-        self.recv(2)
+        self._recv_all(2)
