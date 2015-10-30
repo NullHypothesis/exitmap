@@ -25,9 +25,36 @@ import socket
 import error
 from util import exiturl
 
+import dns.resolver
+
 logger = log.get_logger()
 
 destinations = None
+domains = {
+    "www.youporn.com": [],
+    "youporn.com": [],
+    "www.torproject.org": [],
+    "www.wikileaks.org": [],
+    "www.i2p2.de": [],
+    "torrentfreak.com": [],
+    "blockchain.info": [],
+}
+
+
+def setup():
+    """
+    Populate the `domains' dictionary by asking our system DNS resolver.
+    """
+
+    logger.debug("Populating domain dictionary.")
+
+    for domain in domains.iterkeys():
+        response = dns.resolver.query(domain)
+        for record in response:
+            logger.debug("Domain %s maps to %s." % (domain, record.address))
+            domains[domain].append(record.address)
+
+    logger.info("Domain whitelist: %s" % str(domains))
 
 
 def resolve(exit_desc, domain, whitelist):
@@ -68,24 +95,6 @@ def probe(exit_desc, run_python_over_tor, run_cmd_over_tor):
     """
     Probe the given exit relay and check if all domains resolve as expected.
     """
-
-    # Format: <domain> : <ipv4_addresses>
-
-    domains = {
-        "www.youporn.com": ["31.192.116.24"],
-        "youporn.com": ["31.192.116.24"],
-        "www.torproject.org": ["38.229.72.14", "93.95.227.222", "86.59.30.40",
-                               "38.229.72.16", "82.195.75.101",
-                               "154.35.132.70"],
-        "www.wikileaks.org": ["95.211.113.131", "95.211.113.154",
-                              "195.35.109.53", "195.35.109.44",
-                              "31.192.105.10", "141.105.65.113"],
-        "www.i2p2.de": ["91.143.92.136"],
-        "torrentfreak.com": ["162.159.245.23", "162.159.246.23"],
-        "github.com": ["192.30.252.128", "192.30.252.129", "192.30.252.131",
-                       "192.30.252.130"],
-        "blockchain.info": ["141.101.112.196", "190.93.243.195"],
-    }
 
     for domain in domains.iterkeys():
         run_python_over_tor(resolve, exit_desc, domain, domains[domain])
