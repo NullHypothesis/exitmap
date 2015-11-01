@@ -7,10 +7,14 @@ Overview
 --------
 
 `exitmap` is a fast and extensible Python-based scanner for
-[Tor](https://www.torproject.org) exit relays.  Modules implement tasks that
-are then run over (a subset of) all exit relays.  If you have a background in
-functional programming, think of `exitmap` as a `map()` interface for Tor exit
-relays.  In practice, `exitmap` is useful to monitor the reliability and
+[Tor](https://www.torproject.org) exit relays.  `Exitmap` modules implement
+tasks that are then run over (a subset of) all exit relays.  If you have a
+background in functional programming, think of `exitmap` as a `map()` interface
+for Tor exit relays.  Modules can be any TCP-based networking task; fetching a
+web page, uploading a file, connecting to an SSH server, or joining an IRC
+channel.
+
+In practice, `exitmap` is useful to monitor the reliability and
 trustworthiness of exit relays; `exitmap` is used to check for false negatives
 on the Tor Project's [check](https://check.torproject.org) service and to find
 [malicious exit relays](http://www.cs.kau.se/philwint/spoiled_onions).  It is
@@ -96,6 +100,7 @@ The file can have the following format.
     first_hop = CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912
     verbosity = debug
     build_delay = 1
+    analysis_dir = /path/to/exitmap_scans
 
 Alternatives
 ------------
