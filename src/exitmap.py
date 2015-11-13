@@ -241,8 +241,8 @@ def main():
     cached_consensus_path = os.path.join(args.tor_dir, "cached-consensus")
     if args.first_hop and (not util.relay_in_consensus(args.first_hop,
                                                        cached_consensus_path)):
-        logger.critical("Given first hop \"%s\" not found in consensus.  Is it "
-                        "offline?" % args.first_hop)
+        logger.critical("Given first hop \"%s\" not found in consensus.  Is it"
+                        " offline?" % args.first_hop)
         return 1
 
     for module_name in args.module:
@@ -254,7 +254,7 @@ def main():
         try:
             run_module(module_name, args, controller, socks_port, stats)
         except error.ExitSelectionError as err:
-            logger.error("failed to run because : %s" % err)
+            logger.error("Failed to run because : %s" % err)
     return 0
 
 
@@ -283,11 +283,11 @@ def select_exits(args, module):
         # '-E' was used to specify a file containing exit relays
 
         try:
-           exit_relays = [line.strip() for line in open(args.exit_file)]
-           total = len(exit_relays)
+            exit_relays = [line.strip() for line in open(args.exit_file)]
+            total = len(exit_relays)
         except Exception as err:
-           logger.error("Could not read file %s", args.exit_file)
-           sys.exit(1)
+            logger.error("Could not read file %s", args.exit_file)
+            sys.exit(1)
     else:
         good_exits = False if (args.all_exits or args.bad_exits) else True
         total, exit_relays = relayselector.get_exits(args.tor_dir,
