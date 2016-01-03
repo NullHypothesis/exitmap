@@ -22,6 +22,7 @@ Module to detect false negatives for <https://check.torproject.org>.
 """
 
 import sys
+import json
 try:
     import urllib2
 except ImportError:
@@ -29,6 +30,8 @@ except ImportError:
 
 import log
 from util import exiturl
+
+import stem.descriptor.server_descriptor as descriptor
 
 logger = log.get_logger()
 
@@ -44,24 +47,28 @@ def fetch_page(exit_desc):
     """
 
     data = None
+    url = exiturl(exit_desc.fingerprint)
 
     try:
-        f = urllib2.urlopen("https://check.torproject.org",
-                            timeout=10).read()
-        data = f.decode('utf-8')
+        data = urllib2.urlopen("https://check.torproject.org/api/ip",
+                               timeout=10).read()
     except Exception as err:
         logger.debug("urllib2.urlopen says: %s" % err)
+        return
 
     if not data:
         return
 
-    # This is the string, we are looking for in the response.
+    try:
+        check_answer = json.loads(data)
+    except ValueError as err:
+        logger.warning("Couldn't parse JSON over relay %s: %s" % (url, data))
+        return
 
-    identifier = "Congratulations. This browser is configured to use Tor."
-
-    url = exiturl(exit_desc.fingerprint)
-    if not (identifier in data):
-        logger.error("Detected false negative for %s." % url)
+    check_addr = check_answer["IP"].strip()
+    if not check_answer["IsTor"]:
+        logger.error("Found false negative for %s.  Desc addr is %s and check "
+                     "addr is %s." % (url, exit_desc.address, check_addr))
     else:
         logger.debug("Exit relay %s passed the check test." % url)
 
@@ -79,7 +86,10 @@ def main():
     Entry point when invoked over the command line.
     """
 
-    probe("n/a", None)
+    desc = descriptor.ServerDescriptor("")
+    desc.fingerprint = "bogus"
+    desc.address = "0.0.0.0"
+    fetch_page(desc)
 
     return 0
 
