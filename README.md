@@ -80,7 +80,7 @@ To get an overview of `exitmap`'s options, execute:
   file descriptors available.
 * `checktest`: Attempts to find false negatives in the Tor Project's
   [check](https://check.torproject.org) service.
-* `dns`: Attempts to resolve several domains and compares the received A
+* `dnspoison`: Attempts to resolve several domains and compares the received A
   records to the expected records.
 * `patchingCheck`: Checks for file tampering.
 
