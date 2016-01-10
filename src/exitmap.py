@@ -30,6 +30,7 @@ import random
 import logging
 import ConfigParser
 import functools
+import pwd
 
 import stem
 import stem.connection
@@ -149,7 +150,11 @@ def parse_cmd_args():
                         help="Wait for the given delay (in seconds) between "
                              "circuit builds.  The default is 3.")
 
-    tor_directory = "/tmp/exitmap_tor_datadir"
+    # Create /tmp/exitmap_tor_datadir-<user> to allow many users to run
+    #  exitmap concurrently by default.
+
+    tor_directory = "/tmp" + "/exitmap_tor_datadir-" + pwd.getpwuid(os.getuid())[0]
+
     parser.add_argument("-t", "--tor-dir", type=str,
                         default=tor_directory,
                         help="Tor's data directory.  If set, the network "
