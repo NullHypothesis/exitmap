@@ -152,7 +152,8 @@ def parse_cmd_args():
     # Create /tmp/<user>/exitmap_tor_datadir to allow many users to run
     #  exitmap concurrently by default.
 
-    tor_directory = "/tmp/" + pwd.getpwuid(os.getuid())[0] + "/exitmap_tor_datadir"
+    tor_directory = "/tmp" + "/exitmap_tor_datadir/" + pwd.getpwuid(os.getuid())[0]
+
     parser.add_argument("-t", "--tor-dir", type=str,
                         default=tor_directory,
                         help="Tor's data directory.  If set, the network "
