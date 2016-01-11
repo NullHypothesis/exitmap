@@ -1,4 +1,4 @@
-# Copyright 2013-2015 Philipp Winter <phw@nymity.ch>
+# Copyright 2013-2016 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
 #
@@ -262,7 +262,8 @@ class EventHandler(object):
 
         run_cmd_over_tor = command.Command(self.queue,
                                            circ_event.id,
-                                           socket.socket)
+                                           socket.socket,
+                                           self.socks_port)
 
         exit_desc = get_relay_desc(self.controller, exit_fpr)
         if exit_desc is None:

@@ -1,4 +1,4 @@
-# Copyright 2013-2015 Philipp Winter <phw@nymity.ch>
+# Copyright 2013-2016 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
 #
@@ -24,6 +24,7 @@ import socket
 import threading
 import subprocess
 import tempfile
+import pprint
 
 import log
 import util
@@ -70,7 +71,7 @@ class Command(object):
     Provide an abstraction for a shell command which is to be run.
     """
 
-    def __init__(self, queue, circ_id, origsock):
+    def __init__(self, queue, circ_id, origsock, socks_port):
 
         self.process = None
         self.stdout = None
@@ -79,6 +80,7 @@ class Command(object):
         self.queue = queue
         self.origsocket = origsock
         self.circ_id = circ_id
+        self.socks_port = socks_port
 
     def invoke_process(self, command):
         """
@@ -143,16 +145,21 @@ class Command(object):
         command = ["torsocks"] + command
         self.output_callback = output_callback
 
-        logger.debug("Invoking \"%s\" in environment \"%s\"" %
-                     (" ".join(command), str(os.environ)))
-
         # We run the given command in a separate thread.  The main thread will
         # kill the process if it does not finish before the given timeout.
 
         with tempfile.NamedTemporaryFile(prefix="torsocks_") as fd:
-            logger.debug("Created temporary file %s" % fd.name)
+
+            logger.debug("Created temporary torsocks config file %s" % fd.name)
             os.environ["TORSOCKS_CONF_FILE"] = fd.name
             os.environ["TORSOCKS_LOG_LEVEL"] = "5"
+
+            fd.write("TorPort %d\n" % self.socks_port)
+            fd.write("TorAddress 127.0.0.1\n")
+            fd.flush()
+
+            logger.debug("Invoking \"%s\" in environment:\n%s" %
+                         (" ".join(command), pprint.pformat(dict(os.environ))))
 
             thread = threading.Thread(target=self.invoke_process,
                                       args=(command,))
