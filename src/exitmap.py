@@ -150,10 +150,10 @@ def parse_cmd_args():
                         help="Wait for the given delay (in seconds) between "
                              "circuit builds.  The default is 3.")
 
-    # Create /tmp/exitmap_tor_datadir-<user> to allow many users to run
-    #  exitmap concurrently by default.
+    # Create /tmp/exitmap_tor_datadir-$USER to allow many users to run
+    # exitmap in parallel.
 
-    tor_directory = "/tmp" + "/exitmap_tor_datadir-" + pwd.getpwuid(os.getuid())[0]
+    tor_directory = "/tmp/exitmap_tor_datadir-" + pwd.getpwuid(os.getuid())[0]
 
     parser.add_argument("-t", "--tor-dir", type=str,
                         default=tor_directory,
