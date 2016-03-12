@@ -106,7 +106,12 @@ def get_exits(data_dir, country_code=None, bad_exit=False, good_exit=False,
     # insufficient.
 
     try:
-        for desc in stem.descriptor.parse_file(cached_descriptors_path):
+
+        # We don't validate to work around the following issue:
+        # <https://gitweb.torproject.org/stem.git/commit/?id=ba8cee3>
+
+        for desc in stem.descriptor.parse_file(cached_descriptors_path,
+                                               validate=False):
             if desc.exit_policy.is_exiting_allowed():
                 have_exit_policy[desc.fingerprint] = desc
     except IOError as err:
