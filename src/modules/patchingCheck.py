@@ -45,6 +45,8 @@ import hashlib
 
 import util
 
+import stem.descriptor.server_descriptor as descriptor
+
 logger = log.get_logger()
 
 #######################
@@ -218,7 +220,11 @@ def main():
     """
 
     setup()
-    probe("dummy", None)
+
+    desc = descriptor.ServerDescriptor("")
+    desc.fingerprint = "bogus"
+    run_check(desc)
+
     teardown()
 
     return 0

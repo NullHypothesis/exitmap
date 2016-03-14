@@ -32,6 +32,8 @@ except ImportError:
 import log
 from util import exiturl
 
+import stem.descriptor.server_descriptor as descriptor
+
 logger = log.get_logger()
 
 destinations = [("people.torproject.org", 443)]
@@ -81,7 +83,9 @@ def main():
     Entry point when invoked over the command line.
     """
 
-    probe("dummy", None)
+    desc = descriptor.ServerDescriptor("")
+    desc.fingerprint = "bogus"
+    fetch_page(desc)
 
     return 0
 

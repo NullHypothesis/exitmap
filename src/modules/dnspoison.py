@@ -100,3 +100,7 @@ def probe(exit_desc, run_python_over_tor, run_cmd_over_tor):
 
     for domain in domains.iterkeys():
         run_python_over_tor(resolve, exit_desc, domain, domains[domain])
+
+
+if __name__ == "__main__":
+    logger.critical("Module can only be run over Tor, and not stand-alone.")
