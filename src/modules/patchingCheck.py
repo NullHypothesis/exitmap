@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
-# Copyright 2014, 2015 Philipp Winter <phw@nymity.ch>
+# Copyright 2014-2016 Philipp Winter <phw@nymity.ch>
 # Copyright 2014 Josh Pitts <josh.pitts@leviathansecurity.com>
 #
 # This file is part of exitmap.

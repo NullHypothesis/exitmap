@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
-# Copyright 2015 Philipp Winter <phw@nymity.ch>
+# Copyright 2015-2016 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
 #
