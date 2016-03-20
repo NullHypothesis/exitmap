@@ -67,7 +67,7 @@ def decompress(data):
 
 def is_cloudflared(exit_fpr):
     """
-    Return `True' if site serves a CAPTCHA.
+    Check if site returns a CloudFlare CAPTCHA.
     """
 
     exit_url = util.exiturl(exit_fpr)
@@ -88,10 +88,8 @@ def is_cloudflared(exit_fpr):
 
     if data and (CAPTCHA_SIGN in data):
         logger.info("Exit %s sees a CAPTCHA." % exit_url)
-        return True
     else:
         logger.info("Exit %s does not see a CAPTCHA." % exit_url)
-        return False
 
 
 def probe(exit_desc, run_python_over_tor, run_cmd_over_tor):
