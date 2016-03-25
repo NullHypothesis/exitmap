@@ -83,7 +83,9 @@ Exitmap comes with batteries included, providing the following modules:
   [check](https://check.torproject.org) service.
 * dnspoison: Attempts to resolve several domains and compares the received DNS A
   records to the expected records.
+* dnssec: Detects exit relays whose resolver does not validate DNSSEC.
 * patchingCheck: Checks for file tampering.
+* cloudflared: Checks if a web site returns a CloudFlare CAPTCHA.
 
 Configuration
 -------------
