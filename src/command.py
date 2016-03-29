@@ -42,25 +42,15 @@ def run_python_over_tor(queue, circ_id, socks_port):
     def closure(func, *args):
         """
         Route the given Python function's network traffic over Tor.
-
-        We temporarily monkey-patch socket.socket using our torsocks module and
-        reset it, once the function returns.
+        We temporarily monkey-patch socket.socket using our torsocks
+        module, and reset it once the function returns.
         """
-
-        torsocks.set_default_proxy("127.0.0.1", socks_port)
-        torsocks.queue = queue
-        torsocks.circ_id = circ_id
-
-        orig_socket = socket.socket
-        socket.socket = torsocks.torsocket
-
         try:
-            func(*args)
-        except error.SOCKSv5Error as err:
+            with torsocks.MonkeyPatchedSocket(queue, circ_id, socks_port):
+                func(*args)
+        except (error.SOCKSv5Error, socket.error) as err:
             logger.info(err)
             return
-
-        socket.socket = orig_socket
 
     return closure
 
@@ -71,14 +61,13 @@ class Command(object):
     Provide an abstraction for a shell command which is to be run.
     """
 
-    def __init__(self, queue, circ_id, origsock, socks_port):
+    def __init__(self, queue, circ_id, socks_port):
 
         self.process = None
         self.stdout = None
         self.stderr = None
         self.output_callback = None
         self.queue = queue
-        self.origsocket = origsock
         self.circ_id = circ_id
         self.socks_port = socks_port
 
@@ -122,14 +111,7 @@ class Command(object):
                 port = util.extract_pattern(line, pattern)
 
                 if port:
-
-                    # socket.socket is probably monkey-patched.  We need,
-                    # however, the original implementation.
-
-                    tmpsock = socket.socket
-                    socket.socket = self.origsocket
                     self.queue.put([self.circ_id, ("127.0.0.1", int(port))])
-                    socket.socket = tmpsock
 
                 keep_reading = self.output_callback(line, self.process.kill)
 

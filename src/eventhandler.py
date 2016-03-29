@@ -270,7 +270,6 @@ class EventHandler(object):
 
         run_cmd_over_tor = command.Command(self.queue,
                                            circ_event.id,
-                                           socket.socket,
                                            self.socks_port)
 
         exit_desc = get_relay_desc(self.controller, exit_fpr)
