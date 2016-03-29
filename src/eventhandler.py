@@ -164,6 +164,8 @@ class EventHandler(object):
         self.manager = multiprocessing.Manager()
         self.queue = self.manager.Queue()
         self.socks_port = socks_port
+        self.check_finished_lock = threading.Lock()
+        self.already_finished = False
 
         queue_thread = threading.Thread(target=self.queue_reader)
         queue_thread.daemon = False
@@ -212,37 +214,43 @@ class EventHandler(object):
         Check if the scan is finished and if it is, shut down exitmap.
         """
 
-        # Did all circuits either build or fail?
+        # This is called from both the queue reader thread and the
+        # main thread, but (if it detects completion) does things that
+        # must only happen once.
+        with self.check_finished_lock:
+            if self.already_finished:
+                sys.exit(0)
 
-        circs_done = ((self.stats.failed_circuits +
-                       self.stats.successful_circuits) ==
-                      self.stats.total_circuits)
+            # Did all circuits either build or fail?
+            circs_done = ((self.stats.failed_circuits +
+                           self.stats.successful_circuits) ==
+                          self.stats.total_circuits)
 
-        # Was every built circuit attached to a stream?
+            # Was every built circuit attached to a stream?
+            streams_done = (self.stats.finished_streams >=
+                            (self.stats.successful_circuits -
+                             self.stats.failed_circuits))
 
-        streams_done = (self.stats.finished_streams >=
-                        (self.stats.successful_circuits -
-                         self.stats.failed_circuits))
+            logger.debug("failedCircs=%d, builtCircs=%d, totalCircs=%d, "
+                         "finishedStreams=%d" % (
+                             self.stats.failed_circuits,
+                             self.stats.successful_circuits,
+                             self.stats.total_circuits,
+                             self.stats.finished_streams))
 
-        logger.debug("failedCircs=%d, builtCircs=%d, totalCircs=%d, "
-                     "finishedStreams=%d" % (
-                         self.stats.failed_circuits,
-                         self.stats.successful_circuits,
-                         self.stats.total_circuits,
-                         self.stats.finished_streams))
+            if circs_done and streams_done:
+                self.already_finished = True
 
-        if circs_done and streams_done:
+                for proc in multiprocessing.active_children():
+                    logger.debug("Terminating remaining PID %d." % proc.pid)
+                    proc.terminate()
 
-            for proc in multiprocessing.active_children():
-                logger.debug("Terminating remaining PID %d." % proc.pid)
-                proc.terminate()
+                if hasattr(self.module, "teardown"):
+                    logger.debug("Calling module's teardown() function.")
+                    self.module.teardown()
 
-            if hasattr(self.module, "teardown"):
-                logger.debug("Calling module's teardown() function.")
-                self.module.teardown()
-
-            logger.info(self.stats)
-            sys.exit(0)
+                logger.info(self.stats)
+                sys.exit(0)
 
     def new_circuit(self, circ_event):
         """
