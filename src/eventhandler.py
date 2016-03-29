@@ -121,7 +121,7 @@ class Attacher(object):
             logger.warning("Failed to attach stream because: %s" % err)
 
 
-def module_closure(queue, module, circ_id, *module_args):
+def module_closure(queue, module, circ_id, *module_args, **module_kwargs):
     """
     Return function that runs the module and then informs event handler.
     """
@@ -135,7 +135,7 @@ def module_closure(queue, module, circ_id, *module_args):
         """
 
         try:
-            module(*module_args)
+            module(*module_args, **module_kwargs)
 
             logger.debug("Informing event handler that module finished.")
             queue.put((circ_id, None))
@@ -155,7 +155,7 @@ class EventHandler(object):
     new streams unattached.
     """
 
-    def __init__(self, controller, module, socks_port, stats):
+    def __init__(self, controller, module, socks_port, stats, exit_destinations):
 
         self.stats = stats
         self.controller = controller
@@ -164,6 +164,7 @@ class EventHandler(object):
         self.manager = multiprocessing.Manager()
         self.queue = self.manager.Queue()
         self.socks_port = socks_port
+        self.exit_destinations = exit_destinations
         self.check_finished_lock = threading.Lock()
         self.already_finished = False
 
@@ -282,7 +283,8 @@ class EventHandler(object):
                                 command.run_python_over_tor(self.queue,
                                                             circ_event.id,
                                                             self.socks_port),
-                                run_cmd_over_tor)
+                                run_cmd_over_tor,
+                                destinations=self.exit_destinations[exit_fpr])
 
         proc = multiprocessing.Process(target=module)
         proc.daemon = True
