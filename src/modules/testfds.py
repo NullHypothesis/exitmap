@@ -70,7 +70,7 @@ def fetch_page(exit_desc):
         logger.debug("Exit relay %s worked fine." % exit_url)
 
 
-def probe(exit_desc, run_python_over_tor, run_cmd_over_tor):
+def probe(exit_desc, run_python_over_tor, run_cmd_over_tor, **kwargs):
     """
     Attempts to fetch a small web page and yells if this fails.
     """
