@@ -113,7 +113,7 @@ def get_cached_consensus(cached_consensus_path):
 
     except IOError as err:
         logger.critical("File \"%s\" could not be read: %s" %
-                        (cached_descriptors_path, err))
+                        (cached_consensus_path, err))
         sys.exit(1)
 
 
