@@ -121,7 +121,7 @@ class Attacher(object):
             logger.warning("Failed to attach stream because: %s" % err)
 
 
-def module_closure(queue, module, circ_id, *module_args):
+def module_closure(queue, module, circ_id, *module_args, **module_kwargs):
     """
     Return function that runs the module and then informs event handler.
     """
@@ -135,7 +135,7 @@ def module_closure(queue, module, circ_id, *module_args):
         """
 
         try:
-            module(*module_args)
+            module(*module_args, **module_kwargs)
 
             logger.debug("Informing event handler that module finished.")
             queue.put((circ_id, None))
@@ -155,7 +155,7 @@ class EventHandler(object):
     new streams unattached.
     """
 
-    def __init__(self, controller, module, socks_port, stats):
+    def __init__(self, controller, module, socks_port, stats, exit_destinations):
 
         self.stats = stats
         self.controller = controller
@@ -164,6 +164,9 @@ class EventHandler(object):
         self.manager = multiprocessing.Manager()
         self.queue = self.manager.Queue()
         self.socks_port = socks_port
+        self.exit_destinations = exit_destinations
+        self.check_finished_lock = threading.Lock()
+        self.already_finished = False
 
         queue_thread = threading.Thread(target=self.queue_reader)
         queue_thread.daemon = False
@@ -212,37 +215,43 @@ class EventHandler(object):
         Check if the scan is finished and if it is, shut down exitmap.
         """
 
-        # Did all circuits either build or fail?
+        # This is called from both the queue reader thread and the
+        # main thread, but (if it detects completion) does things that
+        # must only happen once.
+        with self.check_finished_lock:
+            if self.already_finished:
+                sys.exit(0)
 
-        circs_done = ((self.stats.failed_circuits +
-                       self.stats.successful_circuits) ==
-                      self.stats.total_circuits)
+            # Did all circuits either build or fail?
+            circs_done = ((self.stats.failed_circuits +
+                           self.stats.successful_circuits) ==
+                          self.stats.total_circuits)
 
-        # Was every built circuit attached to a stream?
+            # Was every built circuit attached to a stream?
+            streams_done = (self.stats.finished_streams >=
+                            (self.stats.successful_circuits -
+                             self.stats.failed_circuits))
 
-        streams_done = (self.stats.finished_streams >=
-                        (self.stats.successful_circuits -
-                         self.stats.failed_circuits))
+            logger.debug("failedCircs=%d, builtCircs=%d, totalCircs=%d, "
+                         "finishedStreams=%d" % (
+                             self.stats.failed_circuits,
+                             self.stats.successful_circuits,
+                             self.stats.total_circuits,
+                             self.stats.finished_streams))
 
-        logger.debug("failedCircs=%d, builtCircs=%d, totalCircs=%d, "
-                     "finishedStreams=%d" % (
-                         self.stats.failed_circuits,
-                         self.stats.successful_circuits,
-                         self.stats.total_circuits,
-                         self.stats.finished_streams))
+            if circs_done and streams_done:
+                self.already_finished = True
 
-        if circs_done and streams_done:
+                for proc in multiprocessing.active_children():
+                    logger.debug("Terminating remaining PID %d." % proc.pid)
+                    proc.terminate()
 
-            for proc in multiprocessing.active_children():
-                logger.debug("Terminating remaining PID %d." % proc.pid)
-                proc.terminate()
+                if hasattr(self.module, "teardown"):
+                    logger.debug("Calling module's teardown() function.")
+                    self.module.teardown()
 
-            if hasattr(self.module, "teardown"):
-                logger.debug("Calling module's teardown() function.")
-                self.module.teardown()
-
-            logger.info(self.stats)
-            sys.exit(0)
+                logger.info(self.stats)
+                sys.exit(0)
 
     def new_circuit(self, circ_event):
         """
@@ -262,7 +271,6 @@ class EventHandler(object):
 
         run_cmd_over_tor = command.Command(self.queue,
                                            circ_event.id,
-                                           socket.socket,
                                            self.socks_port)
 
         exit_desc = get_relay_desc(self.controller, exit_fpr)
@@ -275,7 +283,8 @@ class EventHandler(object):
                                 command.run_python_over_tor(self.queue,
                                                             circ_event.id,
                                                             self.socks_port),
-                                run_cmd_over_tor)
+                                run_cmd_over_tor,
+                                destinations=self.exit_destinations[exit_fpr])
 
         proc = multiprocessing.Process(target=module)
         proc.daemon = True

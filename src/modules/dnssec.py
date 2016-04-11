@@ -67,7 +67,7 @@ def test_dnssec(exit_fpr):
     logger.critical("%s resolved domain to %s" % (exit_url, ipv4))
 
 
-def probe(exit_desc, run_python_over_tor, run_cmd_over_tor):
+def probe(exit_desc, run_python_over_tor, run_cmd_over_tor, **kwargs):
     """
     Test if exit relay can resolve broken domain.
     """

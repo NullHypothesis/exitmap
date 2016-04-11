@@ -92,7 +92,7 @@ def is_cloudflared(exit_fpr):
         logger.info("Exit %s does not see a CAPTCHA." % exit_url)
 
 
-def probe(exit_desc, run_python_over_tor, run_cmd_over_tor):
+def probe(exit_desc, run_python_over_tor, run_cmd_over_tor, **kwargs):
     """
     Check if exit relay sees a CloudFlare CAPTCHA.
     """

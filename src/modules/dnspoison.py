@@ -93,7 +93,7 @@ def resolve(exit_desc, domain, whitelist):
                      (domain, exit))
 
 
-def probe(exit_desc, run_python_over_tor, run_cmd_over_tor):
+def probe(exit_desc, run_python_over_tor, run_cmd_over_tor, **kwargs):
     """
     Probe the given exit relay and check if all domains resolve as expected.
     """

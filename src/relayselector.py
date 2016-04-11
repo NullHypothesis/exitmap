@@ -82,125 +82,201 @@ def get_fingerprints(cached_consensus_path, exclude=[]):
 
     return fingerprints
 
-
-def get_exits(data_dir, country_code=None, bad_exit=False, good_exit=False,
-              version=None, nickname=None, address=None, hosts=[]):
-    """
-    Extract exit relays with given attributes from consensus.
-
-    Attempts to get the consensus from the provided data directory and extracts
-    all relays with the given attributes.
-    """
-
-    assert not (bad_exit and good_exit)
-
-    cached_consensus = {}
-    have_exit_policy = {}
-    have_exit_flag = {}
-
-    cached_consensus_path = os.path.join(data_dir, "cached-consensus")
-    cached_descriptors_path = os.path.join(data_dir, "cached-descriptors")
-
-    # First, read the file "cached_descriptors" in order to get the full exit
-    # policy of all relays instead of just the summary which might be
-    # insufficient.
+def get_exit_policies(cached_descriptors_path):
+    """Read all relays' full exit policies from "cached_descriptors"."""
 
     try:
+        have_exit_policy = {}
 
         # We don't validate to work around the following issue:
         # <https://gitweb.torproject.org/stem.git/commit/?id=ba8cee3>
-
         for desc in stem.descriptor.parse_file(cached_descriptors_path,
                                                validate=False):
             if desc.exit_policy.is_exiting_allowed():
                 have_exit_policy[desc.fingerprint] = desc
+
+        return have_exit_policy
+
     except IOError as err:
         logger.critical("File \"%s\" could not be read: %s" %
                         (cached_descriptors_path, err))
         sys.exit(1)
 
-    # Now, also read the file "cached_consensus" to see which relays got the
-    # "Exit" flag from the directory authorities.
 
+def get_cached_consensus(cached_consensus_path):
+    """Read relays' summarized descriptors from "cached_consensus"."""
     try:
+        cached_consensus = {}
         for desc in stem.descriptor.parse_file(cached_consensus_path):
             cached_consensus[desc.fingerprint] = desc
-            if stem.Flag.EXIT in desc.flags:
-                have_exit_flag[desc.fingerprint] = desc
+        return cached_consensus
+
     except IOError as err:
         logger.critical("File \"%s\" could not be read: %s" %
                         (cached_descriptors_path, err))
         sys.exit(1)
 
-    # Drop all exit relays for which we have a descriptor but which did not
-    # make it into the consensus.
 
-    have_exit_policy = {fpr: desc for fpr, desc in have_exit_policy.iteritems()
-                        if fpr in cached_consensus}
+def get_exits(data_dir,
+              good_exit=True, bad_exit=False,
+              version=None, nickname=None, address=None, country_code=None,
+              requested_exits=None, destinations=None):
+    """Load the Tor network consensus from DATA_DIR, and extract all exit
+    relays that have the desired set of attributes.  Specifically:
 
-    exit_candidates = list(have_exit_policy.values())
+     - requested_exits: If not None, must be a list of fingerprints,
+       and only those relays will be included in the results.
 
-    set_diff = set(have_exit_policy.keys()) - set(have_exit_flag.keys())
-    logger.info("%d relays have non-empty exit policy but no exit flag." %
-                len(set_diff))
+     - country_code, version, nickname, address:
+       If not None, only relays with the specified attributes
+       will be included in the results.
 
-    if hosts:
-        def can_exit_to(desc):
-            for (ip_addr, port) in hosts:
+     - bad_exit, good_exit: If True, the respective type of exit will
+       be included.  At least one should be True, or else the results
+       will be empty.
 
-                # Use the full exit policy for the given descriptor.
+    These combine as follows:
 
-                desc = have_exit_policy.get(desc.fingerprint, None)
-                assert desc
-                if not desc.exit_policy.can_exit_to(ip_addr, port):
-                    return False
+           exit.fingerprint  IN requested_exits
+       AND exit.country_code == country_code
+       AND exit.version      == version
+       AND exit.nickname     IN nickname
+       AND exit.address      IN address
+       AND (   (bad_exit AND exit.is_bad_exit)
+            OR (good_exit AND NOT exit.is_bad_exit))
 
-            return True
+    In all cases, the criterion is skipped if the argument is None.
 
-        exit_candidates = filter(can_exit_to, exit_candidates)
+    Finally, 'destinations' is considered.  If this is None, all
+    results from the above filter expression are returned.  Otherwise,
+    'destinations' must be a set of (host, port) pairs, and only exits
+    that will connect to *some* of these destinations will be included
+    in the results.
 
-    if address:
-        exit_candidates = filter(lambda desc: address in desc.address,
-                                 exit_candidates)
+    Returns a dictionary, whose keys are the selected relays' fingerprints.
+    The value for each fingerprint is a set of (host, port) pairs that
+    that exit is willing to connect to; this is always a subset of the
+    input 'destinations' set.  (If 'destinations' was None, each value
+    is a pseudo-set object for which '(host, port) in s' always
+    returns True.)
+    """
 
-    if nickname:
-        exit_candidates = filter(lambda desc: nickname in desc.nickname,
-                                 exit_candidates)
 
-    if bad_exit:
-        exit_candidates = filter(lambda desc: stem.Flag.BADEXIT in
-                                 cached_consensus[desc.fingerprint].flags,
-                                 exit_candidates)
+    cached_consensus_path = os.path.join(data_dir, "cached-consensus")
+    cached_descriptors_path = os.path.join(data_dir, "cached-descriptors")
+
+    cached_consensus = get_cached_consensus(cached_consensus_path)
+    have_exit_policy = get_exit_policies(cached_descriptors_path)
+
+    # Drop all exit relays which have a descriptor, but either did not
+    # make it into the consensus at all, or are not marked as exits there.
+    class StubDesc(object):
+        def __init__(self):
+            self.flags = frozenset()
+    stub_desc = StubDesc()
+
+    exit_candidates = [
+        desc
+        for fpr, desc in have_exit_policy.iteritems()
+        if stem.Flag.EXIT in cached_consensus.get(fpr, stub_desc).flags
+    ]
+
+    logger.info("%d relays have non-empty exit policy but no exit flag.",
+                len(have_exit_policy) - len(exit_candidates))
+    if not exit_candidates:
+        logger.warning("No relays have both a non-empty exit policy and an "
+                       "exit flag. This probably means the cached network "
+                       "consensus is invalid.")
+        return {}
+
+    if bad_exit and good_exit:
+        pass # All exits are either bad or good.
+    elif bad_exit:
+        exit_candidates = [
+            desc for desc in exit_candidates
+            if stem.Flag.BADEXIT in cached_consensus[desc.fingerprint].flags
+        ]
+        if not exit_candidates:
+            logger.warning("There are no bad exits in the current consensus.")
+            return {}
     elif good_exit:
-        exit_candidates = filter(lambda desc: stem.Flag.BADEXIT not in
-                                 cached_consensus[desc.fingerprint].flags,
-                                 exit_candidates)
+        exit_candidates = [
+            desc for desc in exit_candidates
+            if stem.Flag.BADEXIT not in cached_consensus[desc.fingerprint].flags
+        ]
+        if not exit_candidates:
+            logger.warning("There are no good exits in the current consensus.")
+            return {}
+    else:
+        # This was probably a programming error.
+        logger.warning("get_exits() called with bad_exits=False and "
+                       "good_exits=False; this always returns zero exits")
+        return {}
 
-    if version:
-        exit_candidates = filter(lambda desc: str(desc.tor_version) == version,
-                                 exit_candidates)
+    # Filter conditions are checked from cheapest to most expensive.
+    if address or nickname or version or requested_exits:
+        exit_candidates = [
+            desc for desc in exit_candidates
+            if ((not address  or address  in desc.address) and
+                (not nickname or nickname in desc.nickname) and
+                (not version  or version  == str(desc.tor_version)) and
+                (not requested_exits or desc.fingerprint in requested_exits))
+        ]
+    if not exit_candidates:
+        logger.warning("No exit relays meet basic filter conditions.")
+        return {}
 
     if country_code:
+        relay_fprs = frozenset(util.get_relays_in_country(country_code))
+        exit_candidates = [
+            desc for desc in exit_candidates
+            if desc.fingerprint in relay_fprs
+        ]
+    if not exit_candidates:
+        logger.warning("No exit relays meet country-code filter condition.")
+        return {}
 
-        # Get fingerprint of all relays in desired country.
+    if not destinations:
+        class UniversalSet(object):
+            """A universal set contains everything, but cannot be enumerated.
 
-        relay_fprs = util.get_relays_in_country(country_code)
+            If the caller of get_exits does not specify destinations,
+            its return value maps all fingerprints to a universal set,
+            so that it can still fulfill the contract of returning a
+            dictionary of the form { fingerprint : set(...) }.
+            """
+            def __nonzero__(self): return True
+            def __contains__(self, obj): return True
+            # __len__ is obliged to return a positive integer.
+            def __len__(self): return sys.maxsize
+        us = UniversalSet()
+        exit_destinations = {
+            desc.fingerprint: us for desc in exit_candidates }
+    else:
+        exit_destinations = {}
+        for desc in exit_candidates:
+            policy = have_exit_policy[desc.fingerprint].exit_policy
+            ok_dests = frozenset(d for d in destinations
+                                 if policy.can_exit_to(*d))
+            if ok_dests:
+                exit_destinations[desc.fingerprint] = ok_dests
 
-        all_exit_fprs = [desc.fingerprint for desc in exit_candidates]
-        exit_fprs = filter(lambda fpr: fpr in all_exit_fprs, relay_fprs)
-        return len(exit_fprs), exit_fprs
-
-    return (len(have_exit_policy),
-            [desc.fingerprint for desc in exit_candidates])
+    logger.info("%d out of %d exit relays meet all filter conditions."
+                % (len(exit_destinations), len(have_exit_policy)))
+    return exit_destinations
 
 
 def main():
     args = parse_cmd_args()
 
-    _, exits = get_exits(args.data_dir, args.countrycode, args.badexit,
-                         args.goodexit, args.version, args.nickname,
-                         args.address)
-    for e in exits:
+    exits = get_exits(args.data_dir,
+                      country_code = args.countrycode,
+                      bad_exit     = args.badexit,
+                      good_exit    = args.goodexit,
+                      version      = args.version,
+                      nickname     = args.nickname,
+                      address      = args.address)
+    for e in exits.keys():
         print("https://atlas.torproject.org/#details/%s" % e)
 
 

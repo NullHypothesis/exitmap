@@ -262,6 +262,22 @@ def main():
             logger.error("Failed to run because : %s" % err)
     return 0
 
+def lookup_destinations(module):
+    """
+    Determine the set of destinations that the module might like to scan.
+    This removes redundancies and reduces all hostnames to IP addresses.
+    """
+    destinations = set()
+    addrs = {}
+    if hasattr(module, 'destinations'):
+        raw_destinations = module.destinations
+        if raw_destinations is not None:
+            for (host, port) in raw_destinations:
+                if host not in addrs:
+                    addrs[host] = socket.gethostbyname(host)
+                destinations.add((addrs[host], port))
+
+    return destinations
 
 def select_exits(args, module):
     """
@@ -273,50 +289,37 @@ def select_exits(args, module):
     """
 
     before = datetime.datetime.now()
-    hosts = []
-
-    if module.destinations is not None:
-        hosts = [(socket.gethostbyname(host), port) for
-                 (host, port) in module.destinations]
+    destinations = lookup_destinations(module)
 
     if args.exit:
         # '-e' was used to specify a single exit relay.
-
-        exit_relays = [args.exit]
-        total = len(exit_relays)
+        requested_exits = [args.exit]
     elif args.exit_file:
-        # '-E' was used to specify a file containing exit relays
-
+        # '-E' was used to specify a file containing exit relays.
         try:
-            exit_relays = [line.strip() for line in open(args.exit_file)]
-            total = len(exit_relays)
+            requested_exits = [line.strip() for line in open(args.exit_file)]
+        except OSError as err:
+            logger.error("Could not read %s: %s", args.exit_file,
+                         err.strerror)
+            sys.exit(1)
         except Exception as err:
-            logger.error("Could not read file %s", args.exit_file)
+            logger.error("Could not read %s: %s", args.exit_file, err)
             sys.exit(1)
     else:
-        good_exits = False if (args.all_exits or args.bad_exits) else True
-        total, exit_relays = relayselector.get_exits(args.tor_dir,
-                                                     country_code=args.country,
-                                                     bad_exit=args.bad_exits,
-                                                     good_exit=good_exits,
-                                                     hosts=hosts)
+        requested_exits = None
+
+    exit_destinations = relayselector.get_exits(
+        args.tor_dir,
+        good_exit       = args.all_exits or (not args.bad_exits),
+        bad_exit        = args.all_exits or args.bad_exits,
+        country_code    = args.country,
+        requested_exits = requested_exits,
+        destinations    = destinations)
 
     logger.debug("Successfully selected exit relays after %s." %
                  str(datetime.datetime.now() - before))
 
-    pretty_hosts = ["%s:%d" % (host, port) for host, port in hosts]
-    logger.info("%d%s exit relays out of all %s exit relays allow traffic "
-                "to: %s" % (len(exit_relays),
-                            " %s" % args.country if args.country else "",
-                            total,
-                            ", ".join(pretty_hosts)))
-
-    assert isinstance(exit_relays, list)
-
-    random.shuffle(exit_relays)
-
-    return exit_relays
-
+    return exit_destinations
 
 def run_module(module_name, args, controller, socks_port, stats):
     """
@@ -338,7 +341,10 @@ def run_module(module_name, args, controller, socks_port, stats):
         logger.debug("Calling module's setup() function.")
         module.setup()
 
-    exit_relays = select_exits(args, module)
+    exit_destinations = select_exits(args, module)
+
+    exit_relays = list(exit_destinations.keys())
+    random.shuffle(exit_relays)
 
     count = len(exit_relays)
     stats.total_circuits += count
@@ -347,7 +353,9 @@ def run_module(module_name, args, controller, socks_port, stats):
         raise error.ExitSelectionError("Exit selection yielded %d exits "
                                        "but need at least one." % count)
 
-    handler = EventHandler(controller, module, socks_port, stats)
+    handler = EventHandler(controller, module, socks_port, stats,
+                           exit_destinations=exit_destinations)
+
     controller.add_event_listener(handler.new_event,
                                   EventType.CIRC, EventType.STREAM)
 
@@ -355,7 +363,7 @@ def run_module(module_name, args, controller, socks_port, stats):
     logger.info("Scan is estimated to take around %s." %
                 datetime.timedelta(seconds=duration))
 
-    logger.debug("Beginning to trigger %d circuit creation(s)." % count)
+    logger.info("Beginning to trigger %d circuit creation(s)." % count)
 
     iter_exit_relays(exit_relays, controller, stats, args)
 
@@ -369,8 +377,6 @@ def iter_exit_relays(exit_relays, controller, stats, args):
     cached_consensus_path = os.path.join(args.tor_dir, "cached-consensus")
     fingerprints = relayselector.get_fingerprints(cached_consensus_path)
     count = len(exit_relays)
-
-    logger.info("Beginning to trigger circuit creations.")
 
     # Start building a circuit for every exit relay we got.
 
