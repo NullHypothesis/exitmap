@@ -48,6 +48,10 @@ _LOCAL_SOCKETS = frozenset(
     if hasattr(socket, af)
 )
 
+# Fix PyPy 2.6.1 issue that Travis CI found.
+if not hasattr(errno, "ENOTSUP"):
+    errno.ENOTSUP = 95
+
 # Map server-side SOCKSv5 errors to errno codes (as best we can; codes
 # 1 and 7 don't correspond to documented error codes for connect(2))
 socks5_errors = {
