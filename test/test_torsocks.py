@@ -28,30 +28,9 @@ from error import SOCKSv5Error
 class TestTorsocks(unittest.TestCase):
     """Test the torsocks module."""
 
-    def test_authentication(self):
-        """Test whether authentication is correctly handled.
-
-        Test first whether global variables are correctly
-        set up and then whether authentication handles
-        correctly failed connections.
-        """
-        sock = torsocks.torsocket()
-        # test proxy and socks_port
-        self.assertRaises(AssertionError, sock._authenticate)
-        torsocks.set_default_proxy("127.0.0.2", 9050)
-        with self.assertRaises(SystemExit) as auth:
-            sock._authenticate()
-        self.assertEqual(auth.exception.code, 1)
-
     def test_send_queue(self):
         self.assertRaises(AssertionError, torsocks.send_queue,
                           ('127.0.0.1', 38662))
-
-    def test_malformed_domain(self):
-        """Test whether the torsocks resolver identifies malformed domains."""
-        sock = torsocks.torsocket()
-        domain = "a" * 256
-        self.assertRaises(SOCKSv5Error, sock.resolve, domain)
 
 
 if __name__ == '__main__':

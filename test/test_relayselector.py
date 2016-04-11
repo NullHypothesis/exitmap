@@ -28,12 +28,16 @@ class TestRelaySelector(unittest.TestCase):
     """Test the torsocks module."""
 
     def test_get_exits(self):
-        self.assertRaises(AssertionError, relayselector.get_exits, '/tmp',
-                          'at', True, True, None, None, None, [])
-        # assert with no cached descriptors
         with self.assertRaises(SystemExit) as exits:
-            relayselector.get_exits('/tmp', 'at', True, False, None,
-                                    None, None, [])
+            relayselector.get_exits('/tmp',
+                                    good_exit=True,
+                                    bad_exit=True,
+                                    version=None,
+                                    nickname=None,
+                                    address=None,
+                                    country_code='at',
+                                    requested_exits=None,
+                                    destinations=None)
         self.assertEqual(exits.exception.code, 1)
 
 
