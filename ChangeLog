@@ -1,5 +1,6 @@
 2016-XX-XX: Changes in version YYYY.MM.DD:
 	- Add command line option '-E' for file containing exit fingerprints.
+	- Add command line option '-n' for random delays between circuit creations.
 	- Add username to data directory, allowing multiple users on a single
 	  machine to run exitmap in parallel.
 	- Make dnspoison module populate its A records automatically.

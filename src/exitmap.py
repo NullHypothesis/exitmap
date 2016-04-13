@@ -150,6 +150,12 @@ def parse_cmd_args():
                         help="Wait for the given delay (in seconds) between "
                              "circuit builds.  The default is 3.")
 
+    parser.add_argument("-n", "--delay-noise", type=float, default=0,
+                        help="Sample random value in [0, DELAY_NOISE) and "
+                             "randomly add it to or subtract it from the build "
+                             "delay.  This randomises the build delay.  The "
+                             "default is 0.")
+
     # Create /tmp/exitmap_tor_datadir-$USER to allow many users to run
     # exitmap in parallel.
 
@@ -368,6 +374,30 @@ def run_module(module_name, args, controller, socks_port, stats):
     iter_exit_relays(exit_relays, controller, stats, args)
 
 
+def sleep(delay, delay_noise):
+    """
+    Sleep in between circuit creations.
+
+    This has two purposes.  First, it spreads the load on both the Tor network
+    and our scanning destination over time.  Second, by using random values to
+    obscure our circuit creation patterns, we hopefully make it harder for a
+    vigilant adversary to detect our scanning.
+    """
+
+    noise = 0
+    if delay_noise != 0:
+        noise = random.random() * delay_noise
+        if random.randint(0, 1):
+            noise = -noise
+
+    delay += noise
+    if delay < 0:
+        delay = 0
+
+    logger.debug("Sleeping for %.1fs, then building next circuit." % delay)
+    time.sleep(delay)
+
+
 def iter_exit_relays(exit_relays, controller, stats, args):
     """
     Invoke circuits for all selected exit relays.
@@ -403,7 +433,7 @@ def iter_exit_relays(exit_relays, controller, stats, args):
                          "created: %s" % (exit_relay, err))
 
         if i != (count - 1):
-            time.sleep(args.build_delay)
+            sleep(args.build_delay, args.delay_noise)
 
     logger.info("Done triggering circuit creations after %s." %
                 str(datetime.datetime.now() - before))
