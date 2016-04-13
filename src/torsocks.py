@@ -19,6 +19,7 @@
 Provide a Tor-specific SOCKSv5 interface.
 """
 
+import os
 import sys
 import struct
 import socket
