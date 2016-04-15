@@ -4,6 +4,9 @@
 	- Add username to data directory, allowing multiple users on a single
 	  machine to run exitmap in parallel.
 	- Make dnspoison module populate its A records automatically.
+	- Add cloudflared module to check if a site is behind CloudFlare.
+	- Add rtt module to measure round-trip times from an exit to a destination.
+	- Add dnssec module to check if an exit relay validates DNSSEC.
 
 2015-08-23: Changes in version 2015.08.23:
 	- Exclude bad exits by default when selecting exit relays.
