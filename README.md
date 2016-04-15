@@ -9,7 +9,7 @@ Overview
 Exitmap is a fast and modular Python-based scanner for
 [Tor](https://www.torproject.org) exit relays.  Exitmap modules implement tasks
 that are run over (a subset of) all exit relays.  If you have a background in
-functional programming, think of `exitmap` as a `map()` interface for Tor exit
+functional programming, think of exitmap as a `map()` interface for Tor exit
 relays.  Modules can perform any TCP-based networking task; fetching a web page,
 uploading a file, connecting to an SSH server, or joining an IRC channel.
 
