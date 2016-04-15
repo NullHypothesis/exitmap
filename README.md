@@ -86,6 +86,7 @@ Exitmap comes with batteries included, providing the following modules:
 * dnssec: Detects exit relays whose resolver does not validate DNSSEC.
 * patchingCheck: Checks for file tampering.
 * cloudflared: Checks if a web site returns a CloudFlare CAPTCHA.
+* rtt: Measure round-trip times through an exit to various destinations.
 
 Configuration
 -------------
