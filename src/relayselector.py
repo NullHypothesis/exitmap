@@ -24,14 +24,14 @@ Extracts exit relays with given attributes from consensus.
 import os
 import sys
 import argparse
+import logging
 
 import stem
 import stem.descriptor
 
-import log
 import util
 
-logger = log.get_logger()
+log = logging.getLogger(__name__)
 
 
 def parse_cmd_args():
@@ -98,8 +98,8 @@ def get_exit_policies(cached_descriptors_path):
         return have_exit_policy
 
     except IOError as err:
-        logger.critical("File \"%s\" could not be read: %s" %
-                        (cached_descriptors_path, err))
+        log.critical("File \"%s\" could not be read: %s" %
+                     (cached_descriptors_path, err))
         sys.exit(1)
 
 
@@ -112,8 +112,8 @@ def get_cached_consensus(cached_consensus_path):
         return cached_consensus
 
     except IOError as err:
-        logger.critical("File \"%s\" could not be read: %s" %
-                        (cached_consensus_path, err))
+        log.critical("File \"%s\" could not be read: %s" %
+                     (cached_consensus_path, err))
         sys.exit(1)
 
 
@@ -181,12 +181,12 @@ def get_exits(data_dir,
         if stem.Flag.EXIT in cached_consensus.get(fpr, stub_desc).flags
     ]
 
-    logger.info("%d relays have non-empty exit policy but no exit flag.",
-                len(have_exit_policy) - len(exit_candidates))
+    log.info("%d relays have non-empty exit policy but no exit flag.",
+             len(have_exit_policy) - len(exit_candidates))
     if not exit_candidates:
-        logger.warning("No relays have both a non-empty exit policy and an "
-                       "exit flag. This probably means the cached network "
-                       "consensus is invalid.")
+        log.warning("No relays have both a non-empty exit policy and an exit "
+                    "flag. This probably means the cached network consensus "
+                    "is invalid.")
         return {}
 
     if bad_exit and good_exit:
@@ -197,7 +197,7 @@ def get_exits(data_dir,
             if stem.Flag.BADEXIT in cached_consensus[desc.fingerprint].flags
         ]
         if not exit_candidates:
-            logger.warning("There are no bad exits in the current consensus.")
+            log.warning("There are no bad exits in the current consensus.")
             return {}
     elif good_exit:
         exit_candidates = [
@@ -205,12 +205,12 @@ def get_exits(data_dir,
             if stem.Flag.BADEXIT not in cached_consensus[desc.fingerprint].flags
         ]
         if not exit_candidates:
-            logger.warning("There are no good exits in the current consensus.")
+            log.warning("There are no good exits in the current consensus.")
             return {}
     else:
         # This was probably a programming error.
-        logger.warning("get_exits() called with bad_exits=False and "
-                       "good_exits=False; this always returns zero exits")
+        log.warning("get_exits() called with bad_exits=False and "
+                    "good_exits=False; this always returns zero exits")
         return {}
 
     # Filter conditions are checked from cheapest to most expensive.
@@ -223,7 +223,7 @@ def get_exits(data_dir,
                 (not requested_exits or desc.fingerprint in requested_exits))
         ]
     if not exit_candidates:
-        logger.warning("No exit relays meet basic filter conditions.")
+        log.warning("No exit relays meet basic filter conditions.")
         return {}
 
     if country_code:
@@ -233,7 +233,7 @@ def get_exits(data_dir,
             if desc.fingerprint in relay_fprs
         ]
     if not exit_candidates:
-        logger.warning("No exit relays meet country-code filter condition.")
+        log.warning("No exit relays meet country-code filter condition.")
         return {}
 
     if not destinations:
@@ -261,8 +261,8 @@ def get_exits(data_dir,
             if ok_dests:
                 exit_destinations[desc.fingerprint] = ok_dests
 
-    logger.info("%d out of %d exit relays meet all filter conditions."
-                % (len(exit_destinations), len(have_exit_policy)))
+    log.info("%d out of %d exit relays meet all filter conditions."
+             % (len(exit_destinations), len(have_exit_policy)))
     return exit_destinations
 
 

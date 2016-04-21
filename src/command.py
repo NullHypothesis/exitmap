@@ -25,13 +25,13 @@ import threading
 import subprocess
 import tempfile
 import pprint
+import logging
 
-import log
 import util
 import torsocks
 import error
 
-logger = log.get_logger()
+log = logging.getLogger(__name__)
 
 
 def run_python_over_tor(queue, circ_id, socks_port):
@@ -49,7 +49,7 @@ def run_python_over_tor(queue, circ_id, socks_port):
             with torsocks.MonkeyPatchedSocket(queue, circ_id, socks_port):
                 func(*args)
         except (error.SOCKSv5Error, socket.error) as err:
-            logger.info(err)
+            log.info(err)
             return
 
     return closure
@@ -132,7 +132,7 @@ class Command(object):
 
         with tempfile.NamedTemporaryFile(prefix="torsocks_") as fd:
 
-            logger.debug("Created temporary torsocks config file %s" % fd.name)
+            log.debug("Created temporary torsocks config file %s" % fd.name)
             os.environ["TORSOCKS_CONF_FILE"] = fd.name
             os.environ["TORSOCKS_LOG_LEVEL"] = "5"
 
@@ -140,8 +140,8 @@ class Command(object):
             fd.write("TorAddress 127.0.0.1\n")
             fd.flush()
 
-            logger.debug("Invoking \"%s\" in environment:\n%s" %
-                         (" ".join(command), pprint.pformat(dict(os.environ))))
+            log.debug("Invoking \"%s\" in environment:\n%s" %
+                      (" ".join(command), pprint.pformat(dict(os.environ))))
 
             thread = threading.Thread(target=self.invoke_process,
                                       args=(command,))
@@ -152,7 +152,7 @@ class Command(object):
         # Attempt to kill the process if it did not finish in time.
 
         if thread.is_alive():
-            logger.debug("Killing process after %d seconds." % timeout)
+            log.debug("Killing process after %d seconds." % timeout)
             self.process.kill()
             thread.join()
 

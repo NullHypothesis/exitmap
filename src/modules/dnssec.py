@@ -22,14 +22,14 @@ Detect exit relays whose resolver does not validate DNSSEC.
 """
 
 import sys
-import log
+import logging
 import socket
 
 import error
 import util
 import torsocks
 
-logger = log.get_logger()
+log = logging.getLogger(__name__)
 
 destinations = None
 
@@ -53,18 +53,17 @@ def test_dnssec(exit_fpr):
     try:
         ipv4 = sock.resolve(BROKEN_DOMAIN)
     except error.SOCKSv5Error as err:
-        logger.debug("%s did not resolve broken domain because: %s.  Good." %
-                     (exit_url, err))
+        log.debug("%s did not resolve broken domain because: %s.  Good." %
+                  (exit_url, err))
         return
     except socket.timeout as err:
-        logger.debug("Socket over exit relay %s timed out: %s" %
-                     (exit_url, err))
+        log.debug("Socket over exit relay %s timed out: %s" % (exit_url, err))
         return
     except Exception as err:
-        logger.debug("Could not resolve domain because: %s" % err)
+        log.debug("Could not resolve domain because: %s" % err)
         return
 
-    logger.critical("%s resolved domain to %s" % (exit_url, ipv4))
+    log.critical("%s resolved domain to %s" % (exit_url, ipv4))
 
 
 def probe(exit_desc, run_python_over_tor, run_cmd_over_tor, **kwargs):
@@ -76,5 +75,5 @@ def probe(exit_desc, run_python_over_tor, run_cmd_over_tor, **kwargs):
 
 
 if __name__ == "__main__":
-    logger.critical("Module can only be run over Tor, not stand-alone.")
+    log.critical("Module can only be run over Tor, not stand-alone.")
     sys.exit(1)

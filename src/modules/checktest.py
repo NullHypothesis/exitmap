@@ -23,17 +23,17 @@ Module to detect false negatives for <https://check.torproject.org>.
 
 import sys
 import json
+import logging
 try:
     import urllib2
 except ImportError:
     import urllib.request as urllib2
 
-import log
 from util import exiturl
 
 import stem.descriptor.server_descriptor as descriptor
 
-logger = log.get_logger()
+log = logging.getLogger(__name__)
 
 # exitmap needs this variable to figure out which relays can exit to the given
 # destination(s).
@@ -53,7 +53,7 @@ def fetch_page(exit_desc):
         data = urllib2.urlopen("https://check.torproject.org/api/ip",
                                timeout=10).read()
     except Exception as err:
-        logger.debug("urllib2.urlopen says: %s" % err)
+        log.debug("urllib2.urlopen says: %s" % err)
         return
 
     if not data:
@@ -62,15 +62,15 @@ def fetch_page(exit_desc):
     try:
         check_answer = json.loads(data)
     except ValueError as err:
-        logger.warning("Couldn't parse JSON over relay %s: %s" % (url, data))
+        log.warning("Couldn't parse JSON over relay %s: %s" % (url, data))
         return
 
     check_addr = check_answer["IP"].strip()
     if not check_answer["IsTor"]:
-        logger.error("Found false negative for %s.  Desc addr is %s and check "
-                     "addr is %s." % (url, exit_desc.address, check_addr))
+        log.error("Found false negative for %s.  Desc addr is %s and check "
+                  "addr is %s." % (url, exit_desc.address, check_addr))
     else:
-        logger.debug("Exit relay %s passed the check test." % url)
+        log.debug("Exit relay %s passed the check test." % url)
 
 
 def probe(exit_desc, run_python_over_tor, run_cmd_over_tor, **kwargs):

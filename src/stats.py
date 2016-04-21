@@ -1,4 +1,4 @@
-# Copyright 2013, 2014, 2015 Philipp Winter <phw@nymity.ch>
+# Copyright 2013-2016 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
 #
@@ -19,13 +19,12 @@
 Provides functions to keep track of scanning statistics.
 """
 
+import logging
 from datetime import datetime
 
 from stem import CircStatus
 
-import log
-
-logger = log.get_logger()
+log = logging.getLogger(__name__)
 
 
 class Statistics(object):
@@ -54,7 +53,7 @@ class Statistics(object):
 
         if circ_event.status in [CircStatus.FAILED]:
 
-            logger.debug("Circuit failed because: %s" % str(circ_event.reason))
+            log.debug("Circuit failed because: %s" % str(circ_event.reason))
             self.failed_circuits += 1
 
         elif circ_event.status in [CircStatus.BUILT]:
@@ -75,10 +74,8 @@ class Statistics(object):
         percent_done = (self.successful_circuits /
                         float(self.total_circuits)) * 100
 
-        logger.info("Probed %d out of %d exit relays, so we are %.2f%% done." %
-                    (self.successful_circuits,
-                     self.total_circuits,
-                     percent_done))
+        log.info("Probed %d out of %d exit relays, so we are %.2f%% done." %
+                 (self.successful_circuits, self.total_circuits, percent_done))
 
     def __str__(self):
         """

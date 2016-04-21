@@ -24,6 +24,7 @@ import functools
 import threading
 import multiprocessing
 import socket
+import logging
 
 import stem
 from stem import StreamStatus
@@ -31,9 +32,8 @@ from stem import CircStatus
 
 import command
 import util
-import log
 
-logger = log.get_logger()
+log = logging.getLogger(__name__)
 
 
 def get_relay_desc(controller, fpr):
@@ -45,11 +45,11 @@ def get_relay_desc(controller, fpr):
     try:
         desc = controller.get_server_descriptor(relay=fpr)
     except stem.DescriptorUnavailable as err:
-        logger.warning("Descriptor for %s not available: %s" % (fpr, err))
+        log.warning("Descriptor for %s not available: %s" % (fpr, err))
     except stem.ControllerError as err:
-        logger.warning("Unable to query for %d: %s" % (fpr, err))
+        log.warning("Unable to query for %d: %s" % (fpr, err))
     except ValueError:
-        logger.warning("%s is malformed.  Is it a relay fingerprint?" % fpr)
+        log.warning("%s is malformed.  Is it a relay fingerprint?" % fpr)
 
     return desc
 
@@ -105,20 +105,20 @@ class Attacher(object):
                                                        stream_id=stream_id)
                 self.unattached[port] = partially_attached
 
-        logger.debug("Pending attachers: %d." % len(self.unattached))
+        log.debug("Pending attachers: %d." % len(self.unattached))
 
     def _attach(self, stream_id=None, circuit_id=None):
         """
         Attach a stream to a circuit.
         """
 
-        logger.debug("Attempting to attach stream %s to circuit %s." %
-                     (stream_id, circuit_id))
+        log.debug("Attempting to attach stream %s to circuit %s." %
+                  (stream_id, circuit_id))
 
         try:
             self.controller.attach_stream(stream_id, circuit_id)
         except stem.OperationFailed as err:
-            logger.warning("Failed to attach stream because: %s" % err)
+            log.warning("Failed to attach stream because: %s" % err)
 
 
 def module_closure(queue, module, circ_id, *module_args, **module_kwargs):
@@ -137,7 +137,7 @@ def module_closure(queue, module, circ_id, *module_args, **module_kwargs):
         try:
             module(*module_args, **module_kwargs)
 
-            logger.debug("Informing event handler that module finished.")
+            log.debug("Informing event handler that module finished.")
             queue.put((circ_id, None))
         except KeyboardInterrupt:
             pass
@@ -180,13 +180,13 @@ class EventHandler(object):
         circuits.
         """
 
-        logger.debug("Starting thread to read from IPC queue.")
+        log.debug("Starting thread to read from IPC queue.")
 
         while True:
             try:
                 circ_id, sockname = self.queue.get()
             except EOFError:
-                logger.debug("IPC queue terminated.")
+                log.debug("IPC queue terminated.")
                 break
 
             # Over the queue, a module can either signal that it finished
@@ -194,18 +194,17 @@ class EventHandler(object):
             # its stream attached to a circuit (by sending (circ_id,sockname)).
 
             if sockname is None:
-                logger.debug("Closing finished circuit %s." % circ_id)
+                log.debug("Closing finished circuit %s." % circ_id)
                 try:
                     self.controller.close_circuit(circ_id)
                 except stem.InvalidArguments as err:
-                    logger.debug("Could not close circuit because: %s" % err)
+                    log.debug("Could not close circuit because: %s" % err)
 
                 self.stats.finished_streams += 1
                 self.stats.print_progress()
                 self.check_finished()
             else:
-                logger.debug("Read from queue: %s, %s" % (circ_id,
-                                                          str(sockname)))
+                log.debug("Read from queue: %s, %s" % (circ_id, str(sockname)))
                 port = int(sockname[1])
                 self.attacher.prepare(port, circuit_id=circ_id)
                 self.check_finished()
@@ -232,25 +231,24 @@ class EventHandler(object):
                             (self.stats.successful_circuits -
                              self.stats.failed_circuits))
 
-            logger.debug("failedCircs=%d, builtCircs=%d, totalCircs=%d, "
-                         "finishedStreams=%d" % (
-                             self.stats.failed_circuits,
-                             self.stats.successful_circuits,
-                             self.stats.total_circuits,
-                             self.stats.finished_streams))
+            log.debug("failedCircs=%d, builtCircs=%d, totalCircs=%d, "
+                      "finishedStreams=%d" % (self.stats.failed_circuits,
+                                              self.stats.successful_circuits,
+                                              self.stats.total_circuits,
+                                              self.stats.finished_streams))
 
             if circs_done and streams_done:
                 self.already_finished = True
 
                 for proc in multiprocessing.active_children():
-                    logger.debug("Terminating remaining PID %d." % proc.pid)
+                    log.debug("Terminating remaining PID %d." % proc.pid)
                     proc.terminate()
 
                 if hasattr(self.module, "teardown"):
-                    logger.debug("Calling module's teardown() function.")
+                    log.debug("Calling module's teardown() function.")
                     self.module.teardown()
 
-                logger.info(self.stats)
+                log.info(self.stats)
                 sys.exit(0)
 
     def new_circuit(self, circ_event):
@@ -266,8 +264,8 @@ class EventHandler(object):
 
         last_hop = circ_event.path[-1]
         exit_fpr = last_hop[0]
-        logger.debug("Circuit for exit relay \"%s\" is built.  "
-                     "Now invoking probing module." % exit_fpr)
+        log.debug("Circuit for exit relay \"%s\" is built.  "
+                  "Now invoking probing module." % exit_fpr)
 
         run_cmd_over_tor = command.Command(self.queue,
                                            circ_event.id,
@@ -305,11 +303,11 @@ class EventHandler(object):
 
         port = util.get_source_port(str(stream_event))
         if not port:
-            logger.warning("Couldn't extract source port from stream "
-                           "event: %s" % str(stream_event))
+            log.warning("Couldn't extract source port from stream "
+                        "event: %s" % str(stream_event))
             return
 
-        logger.debug("Adding attacher for new stream %s." % stream_event.id)
+        log.debug("Adding attacher for new stream %s." % stream_event.id)
         self.attacher.prepare(port, stream_id=stream_event.id)
         self.check_finished()
 
@@ -325,4 +323,4 @@ class EventHandler(object):
             self.new_stream(event)
 
         else:
-            logger.warning("Received unexpected event %s." % str(event))
+            log.warning("Received unexpected event %s." % str(event))

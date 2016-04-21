@@ -40,14 +40,14 @@ try:
 except ImportError:
     import urllib.request as urllib2
 import tempfile
-import log
+import logging
 import hashlib
 
 import util
 
 import stem.descriptor.server_descriptor as descriptor
 
-logger = log.get_logger()
+log = logging.getLogger(__name__)
 
 #######################
 # EDIT ME SECTION START
@@ -79,11 +79,11 @@ def setup():
     Perform one-off setup tasks, i.e., download reference files.
     """
 
-    logger.info("Creating temporary reference files.")
+    log.info("Creating temporary reference files.")
 
     for url, _ in check_files.iteritems():
 
-        logger.debug("Attempting to download <%s>." % url)
+        log.debug("Attempting to download <%s>." % url)
 
         request = urllib2.Request(url)
         request.add_header('User-Agent', test_agent)
@@ -91,7 +91,7 @@ def setup():
         try:
             data = urllib2.urlopen(request).read()
         except Exception as err:
-            logger.warning("urlopen() failed: %s" % err)
+            log.warning("urlopen() failed: %s" % err)
 
         file_name = url.split("/")[-1]
         _, tmp_file = tempfile.mkstemp(prefix="exitmap_%s_" % file_name)
@@ -99,7 +99,7 @@ def setup():
         with open(tmp_file, "wb") as fd:
             fd.write(data)
 
-        logger.debug("Wrote file to \"%s\"." % tmp_file)
+        log.debug("Wrote file to \"%s\"." % tmp_file)
 
         check_files[url] = [tmp_file, sha512_file(tmp_file)]
 
@@ -109,12 +109,12 @@ def teardown():
     Perform one-off teardown tasks, i.e., remove reference files.
     """
 
-    logger.info("Removing reference files.")
+    log.info("Removing reference files.")
 
     for _, file_info in check_files.iteritems():
 
         orig_file, _ = file_info
-        logger.info("Removing file \"%s\"." % orig_file)
+        log.info("Removing file \"%s\"." % orig_file)
         os.remove(orig_file)
 
 
@@ -165,7 +165,7 @@ def run_check(exit_desc):
 
         orig_file, orig_digest = file_info
 
-        logger.debug("Attempting to download <%s> over %s." % (url, exiturl))
+        log.debug("Attempting to download <%s> over %s." % (url, exiturl))
 
         data = None
 
@@ -175,12 +175,11 @@ def run_check(exit_desc):
         try:
             data = urllib2.urlopen(request, timeout=20).read()
         except Exception as err:
-            logger.warning("urlopen() failed for %s: %s" % (exiturl, err))
+            log.warning("urlopen() failed for %s: %s" % (exiturl, err))
             continue
 
         if not data:
-            logger.warning("No data received from <%s> over %s." %
-                           (url, exiturl))
+            log.warning("No data received from <%s> over %s." % (url, exiturl))
             continue
 
         file_name = url.split("/")[-1]
@@ -195,13 +194,13 @@ def run_check(exit_desc):
         if (observed_digest != orig_digest) and \
            (not files_identical(tmp_file, orig_file)):
 
-            logger.critical("File \"%s\" differs from reference file \"%s\".  "
-                            "Downloaded over exit relay %s." %
-                            (tmp_file, orig_file, exiturl))
+            log.critical("File \"%s\" differs from reference file \"%s\".  "
+                         "Downloaded over exit relay %s." %
+                         (tmp_file, orig_file, exiturl))
 
         else:
-            logger.debug("File \"%s\" fetched over %s as expected." %
-                         (tmp_file, exiturl))
+            log.debug("File \"%s\" fetched over %s as expected." %
+                      (tmp_file, exiturl))
 
             os.remove(tmp_file)
 

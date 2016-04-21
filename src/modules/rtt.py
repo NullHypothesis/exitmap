@@ -53,6 +53,7 @@ CONNECTION_TIMEOUT = 10.0
 
 import sys
 import os
+import logging
 
 # We don't _need_ the top-level exitmap module, but this is the most
 # reliable way to figure out whether we need to add the directory with
@@ -81,11 +82,10 @@ try:
 except ImportError:
     import selectors34 as selectors
 
-import log
-logger = log.get_logger()
+log = logging.getLogger(__name__)
 def progress(total, pending, complete):
-    logger.info("{:>6}/{:>6} complete, {} pending"
-                .format(complete, total, pending))
+    log.info("{:>6}/{:>6} complete, {} pending"
+             .format(complete, total, pending))
 
 import util
 
@@ -150,8 +150,8 @@ def perform_probes(addresses, spacing, parallel, timeout, wr):
 
                 last_connection = tick()
                 err = sock.connect_ex(addr)
-                logger.debug("Socket %d connecting to %r returned %d/%s",
-                             sock.fileno(), addr, err, os.strerror(err))
+                log.debug("Socket %d connecting to %r returned %d/%s",
+                          sock.fileno(), addr, err, os.strerror(err))
                 if err == EINPROGRESS:
                     # This is the expected case: the connection attempt is
                     # in progress and we must wait for results.
@@ -182,8 +182,8 @@ def perform_probes(addresses, spacing, parallel, timeout, wr):
             for key, _ in events:
                 addr, before = key.data
                 sock = key.fileobj
-                logger.debug("Socket %d connecting to %r resolved",
-                             sock.fileno(), addr)
+                log.debug("Socket %d connecting to %r resolved",
+                          sock.fileno(), addr)
 
                 sel.unregister(sock)
                 sock.close()
@@ -197,8 +197,8 @@ def perform_probes(addresses, spacing, parallel, timeout, wr):
                 addr, before = key.data
                 if after - before >= timeout:
                     sock = key.fileobj
-                    logger.debug("Socket %d connecting to %r timed out",
-                                 sock.fileno(), addr)
+                    log.debug("Socket %d connecting to %r timed out",
+                              sock.fileno(), addr)
                     sel.unregister(sock)
                     sock.close()
                     pending.remove(key)

@@ -1,4 +1,4 @@
-# Copyright 2013-2015 Philipp Winter <phw@nymity.ch>
+# Copyright 2013-2016 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
 #
@@ -39,7 +39,6 @@ import stem.descriptor
 from stem.control import Controller, EventType
 
 import modules
-import log
 import error
 import util
 import relayselector
@@ -47,7 +46,7 @@ import relayselector
 from eventhandler import EventHandler
 from stats import Statistics
 
-logger = log.get_logger()
+log = logging.getLogger(__name__)
 
 
 def bootstrap_tor(args):
@@ -55,12 +54,12 @@ def bootstrap_tor(args):
     Invoke a Tor process which is subsequently used by exitmap.
     """
 
-    logger.info("Attempting to invoke Tor process in directory \"%s\".  This "
-                "might take a while." % args.tor_dir)
+    log.info("Attempting to invoke Tor process in directory \"%s\".  This "
+             "might take a while." % args.tor_dir)
 
     if not args.first_hop:
-        logger.info("No first hop given.  Using randomly determined first "
-                    "hops for circuits.")
+        log.info("No first hop given.  Using randomly determined first "
+                 "hops for circuits.")
 
     ports = {}
     partial_parse_log_lines = functools.partial(util.parse_log_lines, ports)
@@ -85,9 +84,9 @@ def bootstrap_tor(args):
             completion_percent=80,
             init_msg_handler=partial_parse_log_lines,
         )
-        logger.info("Successfully started Tor process (PID=%d)." % proc.pid)
+        log.info("Successfully started Tor process (PID=%d)." % proc.pid)
     except OSError as err:
-        logger.error("Couldn't launch Tor: %s.  Maybe try again?" % err)
+        log.error("Couldn't launch Tor: %s.  Maybe try again?" % err)
         sys.exit(1)
 
     return ports["socks"], ports["control"]
@@ -121,8 +120,8 @@ def parse_cmd_args():
         try:
             defaults = dict(config_parser.items("Defaults"))
         except ConfigParser.NoSectionError as err:
-            logger.warning("Could not parse config file \"%s\": %s" %
-                           (config_file, err))
+            log.warning("Could not parse config file \"%s\": %s" %
+                        (config_file, err))
             defaults = {}
     else:
         defaults = {}
@@ -184,6 +183,10 @@ def parse_cmd_args():
                              "is used as first hop.  This relay should be "
                              "under your control.")
 
+    parser.add_argument("-o", "--logfile", type=str, default=None,
+                        help="Filename to which log output should be written "
+                             "to.")
+
     exits = parser.add_mutually_exclusive_group()
 
     exits.add_argument("-b", "--bad-exits", action="store_true",
@@ -230,9 +233,13 @@ def main():
     if args.tor_dir and not os.path.exists(args.tor_dir):
         os.makedirs(args.tor_dir)
 
-    logger.setLevel(logging.__dict__[args.verbosity.upper()])
+    logging.getLogger("stem").setLevel(logging.__dict__[args.verbosity.upper()])
+    log_format = "%(asctime)s %(name)s [%(levelname)s] %(message)s"
+    logging.basicConfig(format=log_format,
+                        level=logging.__dict__[args.verbosity.upper()],
+                        filename=args.logfile)
 
-    logger.debug("Command line arguments: %s" % str(args))
+    log.debug("Command line arguments: %s" % str(args))
 
     socks_port, control_port = bootstrap_tor(args)
     controller = Controller.from_port(port=control_port)
@@ -241,7 +248,7 @@ def main():
     # Redirect Tor's logging to work around the following problem:
     # https://bugs.torproject.org/9862
 
-    logger.debug("Redirecting Tor's logging to /dev/null.")
+    log.debug("Redirecting Tor's logging to /dev/null.")
     controller.set_conf("Log", "err file /dev/null")
 
     # We already have the current consensus, so we don't need additional
@@ -252,8 +259,8 @@ def main():
     cached_consensus_path = os.path.join(args.tor_dir, "cached-consensus")
     if args.first_hop and (not util.relay_in_consensus(args.first_hop,
                                                        cached_consensus_path)):
-        logger.critical("Given first hop \"%s\" not found in consensus.  Is it"
-                        " offline?" % args.first_hop)
+        log.critical("Given first hop \"%s\" not found in consensus.  Is it"
+                     " offline?" % args.first_hop)
         return 1
 
     for module_name in args.module:
@@ -265,7 +272,7 @@ def main():
         try:
             run_module(module_name, args, controller, socks_port, stats)
         except error.ExitSelectionError as err:
-            logger.error("Failed to run because : %s" % err)
+            log.error("Failed to run because : %s" % err)
     return 0
 
 def lookup_destinations(module):
@@ -305,11 +312,10 @@ def select_exits(args, module):
         try:
             requested_exits = [line.strip() for line in open(args.exit_file)]
         except OSError as err:
-            logger.error("Could not read %s: %s", args.exit_file,
-                         err.strerror)
+            log.error("Could not read %s: %s", args.exit_file, err.strerror)
             sys.exit(1)
         except Exception as err:
-            logger.error("Could not read %s: %s", args.exit_file, err)
+            log.error("Could not read %s: %s", args.exit_file, err)
             sys.exit(1)
     else:
         requested_exits = None
@@ -322,8 +328,8 @@ def select_exits(args, module):
         requested_exits = requested_exits,
         destinations    = destinations)
 
-    logger.debug("Successfully selected exit relays after %s." %
-                 str(datetime.datetime.now() - before))
+    log.debug("Successfully selected exit relays after %s." %
+              str(datetime.datetime.now() - before))
 
     return exit_destinations
 
@@ -332,19 +338,19 @@ def run_module(module_name, args, controller, socks_port, stats):
     Run an exitmap module over all available exit relays.
     """
 
-    logger.info("Running module '%s'." % module_name)
+    log.info("Running module '%s'." % module_name)
     stats.modules_run += 1
 
     try:
         module = __import__("modules.%s" % module_name, fromlist=[module_name])
     except ImportError as err:
-        logger.error("Failed to load module because: %s" % err)
+        log.error("Failed to load module because: %s" % err)
         return
 
     # Let module perform one-off setup tasks.
 
     if hasattr(module, "setup"):
-        logger.debug("Calling module's setup() function.")
+        log.debug("Calling module's setup() function.")
         module.setup()
 
     exit_destinations = select_exits(args, module)
@@ -366,10 +372,10 @@ def run_module(module_name, args, controller, socks_port, stats):
                                   EventType.CIRC, EventType.STREAM)
 
     duration = count * args.build_delay
-    logger.info("Scan is estimated to take around %s." %
-                datetime.timedelta(seconds=duration))
+    log.info("Scan is estimated to take around %s." %
+             datetime.timedelta(seconds=duration))
 
-    logger.info("Beginning to trigger %d circuit creation(s)." % count)
+    log.info("Beginning to trigger %d circuit creation(s)." % count)
 
     iter_exit_relays(exit_relays, controller, stats, args)
 
@@ -394,7 +400,7 @@ def sleep(delay, delay_noise):
     if delay < 0:
         delay = 0
 
-    logger.debug("Sleeping for %.1fs, then building next circuit." % delay)
+    log.debug("Sleeping for %.1fs, then building next circuit." % delay)
     time.sleep(delay)
 
 
@@ -420,7 +426,7 @@ def iter_exit_relays(exit_relays, controller, stats, args):
             all_hops = list(fingerprints)
             all_hops.remove(exit_relay)
             first_hop = random.choice(all_hops)
-            logger.debug("Using random first hop %s for circuit." % first_hop)
+            log.debug("Using random first hop %s for circuit." % first_hop)
             hops = [first_hop, exit_relay]
 
         assert len(hops) > 1
@@ -429,11 +435,11 @@ def iter_exit_relays(exit_relays, controller, stats, args):
             controller.new_circuit(hops)
         except stem.ControllerError as err:
             stats.failed_circuits += 1
-            logger.debug("Circuit with exit relay \"%s\" could not be "
-                         "created: %s" % (exit_relay, err))
+            log.debug("Circuit with exit relay \"%s\" could not be "
+                      "created: %s" % (exit_relay, err))
 
         if i != (count - 1):
             sleep(args.build_delay, args.delay_noise)
 
-    logger.info("Done triggering circuit creations after %s." %
-                str(datetime.datetime.now() - before))
+    log.info("Done triggering circuit creations after %s." %
+             str(datetime.datetime.now() - before))

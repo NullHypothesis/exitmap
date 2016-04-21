@@ -21,7 +21,8 @@
 Module to detect malfunctioning DNS resolution.
 """
 
-import log
+import logging
+
 import torsocks
 import socket
 import error
@@ -29,7 +30,7 @@ from util import exiturl
 
 import dns.resolver
 
-logger = log.get_logger()
+log = logging.getLogger(__name__)
 
 destinations = None
 domains = {
@@ -48,15 +49,15 @@ def setup():
     Populate the `domains' dictionary by asking our system DNS resolver.
     """
 
-    logger.debug("Populating domain dictionary.")
+    log.debug("Populating domain dictionary.")
 
     for domain in domains.iterkeys():
         response = dns.resolver.query(domain)
         for record in response:
-            logger.debug("Domain %s maps to %s." % (domain, record.address))
+            log.debug("Domain %s maps to %s." % (domain, record.address))
             domains[domain].append(record.address)
 
-    logger.info("Domain whitelist: %s" % str(domains))
+    log.info("Domain whitelist: %s" % str(domains))
 
 
 def resolve(exit_desc, domain, whitelist):
@@ -75,22 +76,22 @@ def resolve(exit_desc, domain, whitelist):
     try:
         ipv4 = sock.resolve(domain)
     except error.SOCKSv5Error as err:
-        logger.debug("Exit relay %s could not resolve IPv4 address for "
-                     "\"%s\" because: %s" % (exit, domain, err))
+        log.debug("Exit relay %s could not resolve IPv4 address for "
+                  "\"%s\" because: %s" % (exit, domain, err))
         return
     except socket.timeout as err:
-        logger.debug("Socket over exit relay %s timed out: %s" % (exit, err))
+        log.debug("Socket over exit relay %s timed out: %s" % (exit, err))
         return
     except EOFError as err:
-        logger.debug("EOF error: %s" % err)
+        log.debug("EOF error: %s" % err)
         return
 
     if ipv4 not in whitelist:
-        logger.critical("Exit relay %s returned unexpected IPv4 address %s "
-                        "for domain %s" % (exit, ipv4, domain))
+        log.critical("Exit relay %s returned unexpected IPv4 address %s "
+                     "for domain %s" % (exit, ipv4, domain))
     else:
-        logger.debug("IPv4 address of domain %s as expected for %s." %
-                     (domain, exit))
+        log.debug("IPv4 address of domain %s as expected for %s." %
+                  (domain, exit))
 
 
 def probe(exit_desc, run_python_over_tor, run_cmd_over_tor, **kwargs):
@@ -103,4 +104,4 @@ def probe(exit_desc, run_python_over_tor, run_cmd_over_tor, **kwargs):
 
 
 if __name__ == "__main__":
-    logger.critical("Module can only be run over Tor, and not stand-alone.")
+    log.critical("Module can only be run over Tor, and not stand-alone.")

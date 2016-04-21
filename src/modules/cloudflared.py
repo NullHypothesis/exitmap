@@ -26,11 +26,11 @@ import StringIO
 import gzip
 import httplib
 import collections
+import logging
 
-import log
 import util
 
-logger = log.get_logger()
+log = logging.getLogger(__name__)
 
 destinations = [("www.cloudflare.com", 443)]
 DOMAIN, PORT = destinations[0]
@@ -71,25 +71,25 @@ def is_cloudflared(exit_fpr):
     """
 
     exit_url = util.exiturl(exit_fpr)
-    logger.debug("Probing exit relay \"%s\"." % exit_url)
+    log.debug("Probing exit relay \"%s\"." % exit_url)
 
     conn = httplib.HTTPSConnection(DOMAIN, PORT, strict=False)
     conn.request("GET", "/", headers=collections.OrderedDict(HTTP_HEADERS))
     try:
         response = conn.getresponse()
     except Exception as err:
-        logger.warning("urlopen() over %s says: %s" % (exit_url, err))
+        log.warning("urlopen() over %s says: %s" % (exit_url, err))
         return
 
     data = decompress(response.read())
     if not data:
-        logger.warning("Did not get any data over %s." % exit_url)
+        log.warning("Did not get any data over %s." % exit_url)
         return
 
     if data and (CAPTCHA_SIGN in data):
-        logger.info("Exit %s sees a CAPTCHA." % exit_url)
+        log.info("Exit %s sees a CAPTCHA." % exit_url)
     else:
-        logger.info("Exit %s does not see a CAPTCHA." % exit_url)
+        log.info("Exit %s does not see a CAPTCHA." % exit_url)
 
 
 def probe(exit_desc, run_python_over_tor, run_cmd_over_tor, **kwargs):

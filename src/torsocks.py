@@ -1,4 +1,4 @@
-# Copyright 2015 Philipp Winter <phw@nymity.ch>
+# Copyright 2015, 2016 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
 #
@@ -25,11 +25,11 @@ import struct
 import socket
 import select
 import errno
+import logging
 
 import error
-import log
 
-logger = log.get_logger()
+log = logging.getLogger(__name__)
 
 proxy_addr = None
 proxy_port = None
@@ -212,7 +212,7 @@ class _Torsocket(orig_socket):
         self._connecting = True
         self._peer_addr  = (dst_addr, dst_port)
 
-        logger.debug("Requesting connection to %s:%d.", dst_addr, dst_port)
+        log.debug("Requesting connection to %s:%d.", dst_addr, dst_port)
 
         self._send_all("\x05\x01\x00\x01%s%s" %
                      (socket.inet_aton(dst_addr), struct.pack(">H", dst_port)))
@@ -224,15 +224,15 @@ class _Torsocket(orig_socket):
         # underlying recv() primitive, and suspend this operation if
         # it comes back with EAGAIN, or fail it if it gives an error.
         # Callers of connect_ex expect to get EINPROGRESS, not EAGAIN.
-        logger.debug("Attempting to read SOCKS reply.")
+        log.debug("Attempting to read SOCKS reply.")
         try:
             resp0 = self._sock.recv(1)
         except socket.error as e:
             if e.errno in _ERRNO_RETRY:
-                logger.debug("SOCKS reply not yet available.")
+                log.debug("SOCKS reply not yet available.")
                 return errno.EINPROGRESS
 
-            logger.debug("Connection failure: %s", e)
+            log.debug("Connection failure: %s", e)
             self._connecting = False
             self._conn_err = e.errno
             return e.errno
@@ -251,8 +251,8 @@ class _Torsocket(orig_socket):
             val = ord(resp[0])
             if val in socks5_errors:
                 self._conn_err = socks5_errors[val]
-                logger.debug("Connection failure at protocol level: %s",
-                             os.strerror(self._conn_err))
+                log.debug("Connection failure at protocol level: %s",
+                          os.strerror(self._conn_err))
                 return self._conn_err
             else:
                 raise error.SOCKSv5Error("Unrecognized SOCKSv5 error: %d" % val)
@@ -270,7 +270,7 @@ class _Torsocket(orig_socket):
         self._recv_all(2)
 
         # We are now officially connected.
-        logger.debug("Now connected to %s:%d.", *self._peer_addr)
+        log.debug("Now connected to %s:%d.", *self._peer_addr)
         self._connected = True
         return 0
 

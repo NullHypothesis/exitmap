@@ -1,4 +1,4 @@
-# Copyright 2013-2015 Philipp Winter <phw@nymity.ch>
+# Copyright 2013-2016 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
 #
@@ -21,6 +21,7 @@ Provides utility functions.
 
 import os
 import re
+import logging
 try:
     import urllib2
 except ImportError:
@@ -31,9 +32,8 @@ import errno
 
 from stem.descriptor.reader import DescriptorReader
 
-import log
 
-logger = log.get_logger()
+log = logging.getLogger(__name__)
 
 # Holds the directory to which we can write temporary analysis results.
 
@@ -47,10 +47,10 @@ def parse_log_lines(ports, log_line):
     Both ports are written to the given dictionary.
     """
 
-    logger.debug("Tor says: %s" % log_line)
+    log.debug("Tor says: %s" % log_line)
 
     if re.search(r"^.*Bootstrapped \d+%.*$", log_line):
-        logger.info(re.sub(r"^.*(Bootstrapped \d+%.*)$", r"Tor \1", log_line))
+        log.info(re.sub(r"^.*(Bootstrapped \d+%.*)$", r"Tor \1", log_line))
 
     socks_pattern = "Socks listener listening on port ([0-9]{1,5})."
     control_pattern = "Control listener listening on port ([0-9]{1,5})."
@@ -58,12 +58,12 @@ def parse_log_lines(ports, log_line):
     match = re.search(socks_pattern, log_line)
     if match:
         ports["socks"] = int(match.group(1))
-        logger.debug("Tor uses port %d as SOCKS port." % ports["socks"])
+        log.debug("Tor uses port %d as SOCKS port." % ports["socks"])
 
     match = re.search(control_pattern, log_line)
     if match:
         ports["control"] = int(match.group(1))
-        logger.debug("Tor uses port %d as control port." % ports["control"])
+        log.debug("Tor uses port %d as control port." % ports["control"])
 
 
 def relay_in_consensus(fingerprint, cached_consensus_path):
@@ -124,26 +124,26 @@ def get_relays_in_country(country_code):
     country_code = country_code.lower()
     onionoo_url = "https://onionoo.torproject.org/details?country="
 
-    logger.info("Attempting to fetch all relays with country code \"%s\" "
-                "from Onionoo." % country_code)
+    log.info("Attempting to fetch all relays with country code \"%s\" "
+             "from Onionoo." % country_code)
 
     try:
         f = urllib2.urlopen("%s%s" % (onionoo_url, country_code))
         data = f.read().decode('utf-8')
     except Exception as err:
-        logger.warning("urlopen() failed: %s" % err)
+        log.warning("urlopen() failed: %s" % err)
         return []
 
     try:
         response = json.loads(data)
     except ValueError as err:
-        logger.warning("json.loads() failed: %s" % err)
+        log.warning("json.loads() failed: %s" % err)
         return []
 
     fingerprints = [desc["fingerprint"] for desc in response["relays"]]
 
-    logger.info("Onionoo gave us %d (exit and non-exit) fingerprints." %
-                len(fingerprints))
+    log.info("Onionoo gave us %d (exit and non-exit) fingerprints." %
+             len(fingerprints))
 
     return fingerprints
 
@@ -180,10 +180,10 @@ def dump_to_file(blurb, exit_fpr):
         with open(file_name, "w") as fd:
             fd.write(blurb)
     except IOError as err:
-        logger.warning("Couldn't write to \"%s\": %s" % (file_name, err))
+        log.warning("Couldn't write to \"%s\": %s" % (file_name, err))
         return None
 
-    logger.debug("Wrote %d-length blurb to file \"%s\"." %
+    log.debug("Wrote %d-length blurb to file \"%s\"." %
                  (len(blurb), file_name))
 
     return file_name

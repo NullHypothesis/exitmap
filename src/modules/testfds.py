@@ -24,17 +24,17 @@ that the relay (probably) has enough file descriptors.
 
 import sys
 import re
+import logging
 try:
     import urllib2
 except ImportError:
     import urllib.request as urllib2
 
-import log
 from util import exiturl
 
 import stem.descriptor.server_descriptor as descriptor
 
-logger = log.get_logger()
+log = logging.getLogger(__name__)
 
 destinations = [("people.torproject.org", 443)]
 
@@ -46,28 +46,27 @@ def fetch_page(exit_desc):
 
     exit_url = exiturl(exit_desc.fingerprint)
 
-    logger.debug("Probing exit relay %s." % exit_url)
+    log.debug("Probing exit relay %s." % exit_url)
 
     data = None
     try:
         data = urllib2.urlopen("https://people.torproject.org/~phw/check_file",
                                timeout=10).read()
     except Exception as err:
-        logger.warning("urllib2.urlopen for %s says: %s." %
-                       (exit_desc.fingerprint, err))
+        log.warning("urllib2.urlopen for %s says: %s." %
+                    (exit_desc.fingerprint, err))
         return
 
     if not data:
-        logger.warning("Exit relay %s did not return data." % exit_url)
+        log.warning("Exit relay %s did not return data." % exit_url)
         return
 
     data = data.strip()
 
     if not re.match(expected, data):
-        logger.warning("Got unexpected response from %s: %s." %
-                       (exit_url, data))
+        log.warning("Got unexpected response from %s: %s." % (exit_url, data))
     else:
-        logger.debug("Exit relay %s worked fine." % exit_url)
+        log.debug("Exit relay %s worked fine." % exit_url)
 
 
 def probe(exit_desc, run_python_over_tor, run_cmd_over_tor, **kwargs):
