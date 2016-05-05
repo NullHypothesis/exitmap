@@ -294,7 +294,7 @@ def main():
     try:
         run_module(module_name, args, controller, socks_port, stats)
     except error.ExitSelectionError as err:
-        logger.error("Failed to run because : %s" % err)
+        log.error("Failed to run because : %s" % err)
 
     return 0
 
@@ -373,7 +373,7 @@ def run_module(module_name, args, controller, socks_port, stats):
     # Let module perform one-off setup tasks.
 
     if hasattr(module, "setup"):
-        logger.debug("Calling module's setup() function.")
+        log.debug("Calling module's setup() function.")
         module.setup(args)
 
     exit_destinations = select_exits(args, module)
