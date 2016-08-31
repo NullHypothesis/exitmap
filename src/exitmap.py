@@ -424,7 +424,12 @@ def iter_exit_relays(exit_relays, controller, stats, args):
             hops = [args.first_hop, exit_relay]
         else:
             all_hops = list(fingerprints)
-            all_hops.remove(exit_relay)
+
+            try:
+                all_hops.remove(exit_relay)
+            except ValueError:
+                # Catch exception when exit is not in the cached_consensus
+                pass
             first_hop = random.choice(all_hops)
             log.debug("Using random first hop %s for circuit." % first_hop)
             hops = [first_hop, exit_relay]
