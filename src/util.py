@@ -163,16 +163,15 @@ def dump_to_file(blurb, exit_fpr):
     This function is useful to save data obtained from bad exit relays to file
     for later analysis.
     """
-
-    try:
-        os.makedirs(analysis_dir)
-    except OSError as err:
-        if err.errno != errno.EEXIST:
-            raise
-
     if analysis_dir is None:
         fd, file_name = tempfile.mkstemp(prefix="%s_" % exit_fpr)
+
     else:
+        try:
+            os.makedirs(analysis_dir)
+        except OSError as err:
+            if err.errno != errno.EEXIST:
+                raise
         fd, file_name = tempfile.mkstemp(prefix="%s_" % exit_fpr,
                                          dir=analysis_dir)
 
