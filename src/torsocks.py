@@ -20,7 +20,6 @@ Provide a Tor-specific SOCKSv5 interface.
 """
 
 import os
-import sys
 import struct
 import socket
 import select
@@ -56,16 +55,17 @@ if not hasattr(errno, "ENOTSUP"):
 # Map server-side SOCKSv5 errors to errno codes (as best we can; codes
 # 1 and 7 don't correspond to documented error codes for connect(2))
 socks5_errors = {
-    0x00: 0,                  # Success
-    0x01: errno.EIO,          # General failure
-    0x02: errno.EACCES,       # Connection not allowed by ruleset
-    0x03: errno.ENETUNREACH,  # Network unreachable
-    0x04: errno.EHOSTUNREACH, # Host unreachable
-    0x05: errno.ECONNREFUSED, # Connection refused by destination host
-    0x06: errno.ETIMEDOUT,    # TTL expired
-    0x07: errno.ENOTSUP,      # Command not supported / protocol error
-    0x08: errno.EAFNOSUPPORT, # Address type not supported
+    0x00: 0,                   # Success
+    0x01: errno.EIO,           # General failure
+    0x02: errno.EACCES,        # Connection not allowed by ruleset
+    0x03: errno.ENETUNREACH,   # Network unreachable
+    0x04: errno.EHOSTUNREACH,  # Host unreachable
+    0x05: errno.ECONNREFUSED,  # Connection refused by destination host
+    0x06: errno.ETIMEDOUT,     # TTL expired
+    0x07: errno.ENOTSUP,       # Command not supported / protocol error
+    0x08: errno.EAFNOSUPPORT,  # Address type not supported
 }
+
 
 def send_queue(sock_name):
     """
@@ -76,6 +76,7 @@ def send_queue(sock_name):
     assert (queue is not None) and (circ_id is not None)
 
     queue.put([circ_id, sock_name])
+
 
 class _Torsocket(orig_socket):
 
@@ -210,7 +211,7 @@ class _Torsocket(orig_socket):
 
         dst_addr, dst_port = addr_tuple[0], int(addr_tuple[1])
         self._connecting = True
-        self._peer_addr  = (dst_addr, dst_port)
+        self._peer_addr = (dst_addr, dst_port)
 
         log.debug("Requesting connection to %s:%d.", dst_addr, dst_port)
 
@@ -292,6 +293,7 @@ class _Torsocket(orig_socket):
     def send(self, *args):
         self._maybe_finish_socks_handshake()
         return self._sock.send(*args)
+
     def sendall(self, *args):
         self._maybe_finish_socks_handshake()
         return self._sock.sendall(*args)
@@ -299,6 +301,7 @@ class _Torsocket(orig_socket):
     def recv(self, *args):
         self._maybe_finish_socks_handshake()
         return self._sock.recv(*args)
+
     def recv_into(self, *args):
         self._maybe_finish_socks_handshake()
         return self._sock.recv_into(*args)
@@ -310,12 +313,16 @@ class _Torsocket(orig_socket):
 
     # These sockets can only be used as client sockets.
     def accept(self): raise NotImplementedError
-    def bind(self):   raise NotImplementedError
+
+    def bind(self): raise NotImplementedError
+
     def listen(self): raise NotImplementedError
 
     # These sockets can only be used as connected sockets.
     def sendto(self, *a): raise NotImplementedError
+
     def recvfrom(self, *a): raise NotImplementedError
+
     def recvfrom_into(self, *a): raise NotImplementedError
 
     # Provide information about the ultimate destination, not the
@@ -332,7 +339,7 @@ class _Torsocket(orig_socket):
             if self._connecting:
                 err = self._attempt_finish_socks_handshake()
                 if err == errno.EINPROGRESS:
-                    return 0 # there's no pending connection error yet
+                    return 0  # there's no pending connection error yet
 
             if self._conn_err is not None:
                 err = self._conn_err
@@ -367,6 +374,7 @@ def torsocket(family=socket.AF_INET, type=socket.SOCK_STREAM,
                            os.strerror(errno.EPROTONOSUPPORT))
 
     return _Torsocket(family, type, proto, _sock)
+
 
 class MonkeyPatchedSocket(object):
     """
