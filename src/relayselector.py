@@ -249,8 +249,8 @@ def get_exits(data_dir,
             def __nonzero__(self): return True
 
             def __contains__(self, obj): return True
-            # __len__ is obliged to return a positive integer.
 
+            # __len__ is obliged to return a positive integer.
             def __len__(self): return sys.maxsize
         us = UniversalSet()
         exit_destinations = {
@@ -273,12 +273,12 @@ def main():
     args = parse_cmd_args()
 
     exits = get_exits(args.data_dir,
-                      country_code=args.countrycode,
-                      bad_exit=args.badexit,
-                      good_exit=args.goodexit,
-                      version=args.version,
-                      nickname=args.nickname,
-                      address=args.address)
+                      country_code = args.countrycode,
+                      bad_exit     = args.badexit,
+                      good_exit    = args.goodexit,
+                      version      = args.version,
+                      nickname     = args.nickname,
+                      address      = args.address)
     for e in exits.keys():
         print("https://atlas.torproject.org/#details/%s" % e)
 

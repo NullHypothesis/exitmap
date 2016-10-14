@@ -324,11 +324,11 @@ def select_exits(args, module):
 
     exit_destinations = relayselector.get_exits(
         args.tor_dir,
-        good_exit=args.all_exits or (not args.bad_exits),
-        bad_exit=args.all_exits or args.bad_exits,
-        country_code=args.country,
-        requested_exits=requested_exits,
-        destinations=destinations)
+        good_exit       = args.all_exits or (not args.bad_exits),
+        bad_exit        = args.all_exits or args.bad_exits,
+        country_code    = args.country,
+        requested_exits = requested_exits,
+        destinations    = destinations)
 
     log.debug("Successfully selected exit relays after %s." %
               str(datetime.datetime.now() - before))
