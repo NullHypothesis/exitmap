@@ -82,6 +82,7 @@ def get_fingerprints(cached_consensus_path, exclude=[]):
 
     return fingerprints
 
+
 def get_exit_policies(cached_descriptors_path):
     """Read all relays' full exit policies from "cached_descriptors"."""
 
@@ -190,7 +191,7 @@ def get_exits(data_dir,
         return {}
 
     if bad_exit and good_exit:
-        pass # All exits are either bad or good.
+        pass  # All exits are either bad or good.
     elif bad_exit:
         exit_candidates = [
             desc for desc in exit_candidates
@@ -217,9 +218,9 @@ def get_exits(data_dir,
     if address or nickname or version or requested_exits:
         exit_candidates = [
             desc for desc in exit_candidates
-            if ((not address  or address  in desc.address) and
+            if ((not address or address in desc.address) and
                 (not nickname or nickname in desc.nickname) and
-                (not version  or version  == str(desc.tor_version)) and
+                (not version or version == str(desc.tor_version)) and
                 (not requested_exits or desc.fingerprint in requested_exits))
         ]
     if not exit_candidates:
@@ -246,12 +247,14 @@ def get_exits(data_dir,
             dictionary of the form { fingerprint : set(...) }.
             """
             def __nonzero__(self): return True
+
             def __contains__(self, obj): return True
+
             # __len__ is obliged to return a positive integer.
             def __len__(self): return sys.maxsize
         us = UniversalSet()
         exit_destinations = {
-            desc.fingerprint: us for desc in exit_candidates }
+            desc.fingerprint: us for desc in exit_candidates}
     else:
         exit_destinations = {}
         for desc in exit_candidates:

@@ -34,7 +34,38 @@ address per line.  (You _may_ use hostnames, but if you do, they will
 be resolved directly, not via Tor.)
 """
 
-## Configuration parameters:
+import sys
+import os
+import logging
+import csv
+import errno
+import random
+import socket
+import util
+
+# We don't _need_ the top-level exitmap module, but this is the most
+# reliable way to figure out whether we need to add the directory with
+# the utility modules that we _do_ need to sys.path.
+try:
+    import exitmap
+except ImportError:
+    current_path = os.path.dirname(__file__)
+    src_path = os.path.abspath(os.path.join(current_path, ".."))
+    sys.path.insert(0, src_path)
+    import exitmap
+
+try:
+    from time import monotonic as tick
+except ImportError:
+    # FIXME: Maybe use ctypes to get at clock_gettime(CLOCK_MONOTONIC)?
+    from time import time as tick
+
+try:
+    import selectors
+except ImportError:
+    import selectors34 as selectors
+
+# Configuration parameters:
 # The set of ports that we consider connecting to.
 PREFERRED_PORT_ORDER = (53, 22, 443, 80)
 
@@ -51,43 +82,14 @@ CONNECTION_SPACING = 0.25
 # The per-connection timeout (seconds).
 CONNECTION_TIMEOUT = 10.0
 
-import sys
-import os
-import logging
-
-# We don't _need_ the top-level exitmap module, but this is the most
-# reliable way to figure out whether we need to add the directory with
-# the utility modules that we _do_ need to sys.path.
-try:
-    import exitmap
-except ImportError:
-    current_path = os.path.dirname(__file__)
-    src_path = os.path.abspath(os.path.join(current_path, ".."))
-    sys.path.insert(0, src_path)
-    import exitmap
-
-import csv
-import errno
-import random
-import socket
-
-try:
-    from time import monotonic as tick
-except ImportError:
-    # FIXME: Maybe use ctypes to get at clock_gettime(CLOCK_MONOTONIC)?
-    from time import time as tick
-
-try:
-    import selectors
-except ImportError:
-    import selectors34 as selectors
 
 log = logging.getLogger(__name__)
+
+
 def progress(total, pending, complete):
     log.info("{:>6}/{:>6} complete, {} pending"
              .format(complete, total, pending))
 
-import util
 
 def perform_probes(addresses, spacing, parallel, timeout, wr):
     """Make a TCP connection to each of the ADDRESSES, in order, and
@@ -206,7 +208,7 @@ def perform_probes(addresses, spacing, parallel, timeout, wr):
                     complete += 1
                     change = True
 
-        #end while
+        # end while
         progress(total, len(pending), complete)
 
     finally:
@@ -222,7 +224,7 @@ def choose_probe_order(dests):
        as the ADDRESSES argument to perform_probes."""
 
     hosts = {}
-    for h,p in dests:
+    for h, p in dests:
         if h not in hosts: hosts[h] = set()
         hosts[h].add(p)
 
@@ -275,7 +277,7 @@ def probe(exit_desc, run_python_over_tor, run_cmd_over_tor,
     with open(os.path.join(util.analysis_dir,
                            exit_desc.fingerprint + ".csv"), "wt") as f:
         wr = csv.writer(f, quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
-        wr.writerow(("host","port","elapsed"))
+        wr.writerow(("host", "port", "elapsed"))
 
         run_python_over_tor(perform_probes,
                             addresses,
@@ -288,6 +290,8 @@ def probe(exit_desc, run_python_over_tor, run_cmd_over_tor,
 # destination(s).
 
 destinations = None
+
+
 def setup():
     ds = set()
     with open("rtt-destinations.txt") as f:

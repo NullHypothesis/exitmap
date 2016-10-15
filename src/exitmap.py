@@ -151,8 +151,8 @@ def parse_cmd_args():
 
     parser.add_argument("-n", "--delay-noise", type=float, default=0,
                         help="Sample random value in [0, DELAY_NOISE) and "
-                             "randomly add it to or subtract it from the build "
-                             "delay.  This randomises the build delay.  The "
+                             "randomly add it to or subtract it from the build"
+                             " delay.  This randomises the build delay.  The "
                              "default is 0.")
 
     # Create /tmp/exitmap_tor_datadir-$USER to allow many users to run
@@ -275,6 +275,7 @@ def main():
             log.error("Failed to run because : %s" % err)
     return 0
 
+
 def lookup_destinations(module):
     """
     Determine the set of destinations that the module might like to scan.
@@ -291,6 +292,7 @@ def lookup_destinations(module):
                 destinations.add((addrs[host], port))
 
     return destinations
+
 
 def select_exits(args, module):
     """
@@ -332,6 +334,7 @@ def select_exits(args, module):
               str(datetime.datetime.now() - before))
 
     return exit_destinations
+
 
 def run_module(module_name, args, controller, socks_port, stats):
     """

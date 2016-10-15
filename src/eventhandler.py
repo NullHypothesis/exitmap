@@ -23,7 +23,6 @@ import sys
 import functools
 import threading
 import multiprocessing
-import socket
 import logging
 
 import stem
