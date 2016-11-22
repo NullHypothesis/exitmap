@@ -228,7 +228,12 @@ def get_exits(data_dir,
         return {}
 
     if country_code:
-        relay_fprs = frozenset(util.get_relays_in_country(country_code))
+        try:
+            relay_fprs = frozenset(util.get_relays_in_country(country_code))
+        except Exception as err:
+            log.warning("get_relays_in_country() failed: %s" % err)
+            relay_fprs = []
+
         exit_candidates = [
             desc for desc in exit_candidates
             if desc.fingerprint in relay_fprs

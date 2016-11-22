@@ -115,10 +115,9 @@ def extract_pattern(line, pattern):
 
 def get_relays_in_country(country_code):
     """
-    Return a list of the fingerprint of all relays in the given country code.
+    Return a list of the fingerprints of all relays in the given country code.
 
-    The fingerprints are obtained by querying Onionoo.  In case of an error, an
-    empty list is returned.
+    The fingerprints are obtained by querying Onionoo.
     """
 
     country_code = country_code.lower()
@@ -127,18 +126,9 @@ def get_relays_in_country(country_code):
     log.info("Attempting to fetch all relays with country code \"%s\" "
              "from Onionoo." % country_code)
 
-    try:
-        f = urllib2.urlopen("%s%s" % (onionoo_url, country_code))
-        data = f.read().decode('utf-8')
-    except Exception as err:
-        log.warning("urlopen() failed: %s" % err)
-        return []
-
-    try:
-        response = json.loads(data)
-    except ValueError as err:
-        log.warning("json.loads() failed: %s" % err)
-        return []
+    f = urllib2.urlopen("%s%s" % (onionoo_url, country_code))
+    data = f.read().decode('utf-8')
+    response = json.loads(data)
 
     fingerprints = [desc["fingerprint"] for desc in response["relays"]]
 
