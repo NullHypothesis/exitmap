@@ -1,8 +1,0 @@
-SOCKSPort 10000
-ControlPort 10001
-DataDirectory /tmp/tordata
-
-__DisablePredictedCircuits 1
-__LeaveStreamsUnattached 1
-FetchServerDescriptors 0
-FetchHidServDescriptors 0

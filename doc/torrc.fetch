@@ -1,4 +1,0 @@
-SOCKSPort 10000
-ControlPort 10001
-UseMicroDescriptors 0
-DataDirectory /tmp/tordata
