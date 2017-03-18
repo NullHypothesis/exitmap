@@ -53,7 +53,7 @@ def main():
         for file_path in static_check_issues:
             print "* %s" % file_path
 
-            for line_number, msg in static_check_issues[file_path]:
+            for line_number, msg, code in static_check_issues[file_path]:
                 line_count = "%-4s" % line_number
                 print "  line %s - %s" % (line_count, msg)
 
