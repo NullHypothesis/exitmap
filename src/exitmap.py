@@ -201,14 +201,9 @@ def parse_cmd_args():
     parser.add_argument("-V", "--version", action="version",
                         version="%(prog)s 2015.04.06")
 
-    parser.add_argument("module", nargs='+',
-                        help="Run the given module (available: %s)." %
-                        ", ".join(get_modules()))
-
     parser.set_defaults(**defaults)
 
-    return parser.parse_args(remaining_argv)
-
+    return parser.parse_known_args(remaining_argv)
 
 def get_modules():
     """
@@ -226,7 +221,10 @@ def main():
     """
 
     stats = Statistics()
-    args = parse_cmd_args()
+    args, remaining_argv = parse_cmd_args()
+
+    # Make a list of modules which are to be used
+    modules = [module for module in remaining_argv if module in get_modules()]
 
     # Create and set the given directories.
 
@@ -263,7 +261,15 @@ def main():
                      " offline?" % args.first_hop)
         return 1
 
-    for module_name in args.module:
+    for module_name in modules:
+
+        # Make a list of arguments to the module which is to be used
+        module_args = []
+        for i in range(remaining_argv.index(module)+1, len(remaining_argv)):
+            if remaining_argv[i] in modules:
+                break
+            else:
+                module_args.append(remaining_argv[i])
 
         if args.analysis_dir is not None:
             datestr = time.strftime("%Y-%m-%d_%H:%M:%S%z") + "_" + module_name
