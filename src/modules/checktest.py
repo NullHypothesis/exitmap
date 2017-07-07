@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 
-# Copyright 2013-2016 Philipp Winter <phw@nymity.ch>
+# Copyright 2013-2017 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
 #
@@ -67,7 +67,7 @@ def fetch_page(exit_desc):
 
     check_addr = check_answer["IP"].strip()
     if not check_answer["IsTor"]:
-        log.error("Found false negative for %s.  Desc addr is %s and check "
+        log.error("Check thinks %s isn't Tor.  Desc addr is %s and check "
                   "addr is %s." % (url, exit_desc.address, check_addr))
     else:
         log.debug("Exit relay %s passed the check test." % url)
