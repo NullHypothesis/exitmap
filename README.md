@@ -54,21 +54,19 @@ The command line output will then show you how Tor bootstraps, the output of the
 checktest module, and a scan summary.  If you don't need three hops and prefer
 to use two hops with a static first hop, run:
 
-    $ ./bin/exitmap --first-hop CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912 checktest
+    $ ./bin/exitmap --first-hop 1234567890ABCDEF1234567890ABCDEF12345678 checktest
 
 To run the same test over German exit relays only, execute:
 
-    $ ./bin/exitmap --country DE --first-hop CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912 checktest
+    $ ./bin/exitmap --country DE --first-hop 1234567890ABCDEF1234567890ABCDEF12345678 checktest
 
 If you want to pause for five seconds in between circuit creations to reduce the
 load on the Tor network and the scanning destination, run:
 
     $ ./bin/exitmap --build-delay 5 checktest
 
-Note that
-[`CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912`](https://atlas.torproject.org/#details/CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912)
-is a relay run by Karlstad University.  Feel free to use it, but try to use your
-own relay to distribute the scanning load.
+Note that `1234567890ABCDEF1234567890ABCDEF12345678` is a pseudo fingerprint
+that you should replace with an exit relay that you control.
 
 To get an overview of exitmap's other options, run:
 
@@ -96,7 +94,7 @@ The file accepts all command line options, but you have to replace minuses with
 underscores.  Here is an example:
 
     [Defaults]
-    first_hop = CCEF02AA454C0AB0FE1AC68304F6D8C4220C1912
+    first_hop = 1234567890ABCDEF1234567890ABCDEF12345678
     verbosity = debug
     build_delay = 1
     analysis_dir = /path/to/exitmap_scans
