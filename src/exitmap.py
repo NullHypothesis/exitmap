@@ -199,7 +199,7 @@ def parse_cmd_args():
                             "scanned.")
 
     parser.add_argument("-V", "--version", action="version",
-                        version="%(prog)s 2015.04.06")
+                        version="%(prog)s 2016.04.21")
 
     parser.add_argument("module", nargs='+',
                         help="Run the given module (available: %s)." %
