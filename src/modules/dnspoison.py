@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 
-# Copyright 2013-2016 Philipp Winter <phw@nymity.ch>
+# Copyright 2013-2017 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
 #
@@ -37,7 +37,6 @@ domains = {
     "www.youporn.com": [],
     "youporn.com": [],
     "www.torproject.org": [],
-    "www.wikileaks.org": [],
     "www.i2p2.de": [],
     "torrentfreak.com": [],
     "blockchain.info": [],
