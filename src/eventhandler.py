@@ -32,6 +32,8 @@ from stem import CircStatus
 import command
 import util
 
+from collections import deque;
+
 log = logging.getLogger(__name__)
 
 
@@ -65,6 +67,12 @@ class Attacher(object):
 
         self.unattached = {}
         self.controller = controller
+        self.autoattach_circuit = deque();
+    
+    def autoattach(self, circuit_id):
+        log.debug("autoattached id %s" % str(circuit_id));
+        if circuit_id is not None:
+            self.autoattach_circuit.append(int(circuit_id));
 
     def prepare(self, port, circuit_id=None, stream_id=None):
         """
@@ -75,6 +83,8 @@ class Attacher(object):
         so it can be attached later.
         """
 
+        if circuit_id is not None:
+            log.debug("circuit done with id %s." % str(circuit_id));
         assert ((circuit_id is not None) and (stream_id is None)) or \
                ((circuit_id is None) and (stream_id is not None))
 
@@ -85,10 +95,15 @@ class Attacher(object):
 
             if circuit_id:
                 attach(circuit_id=circuit_id)
+            elif (stream_id is None and len(self.autoattach_circuit) > 0):
+                attach(self.autoattach_circuit[0]);
             else:
                 attach(stream_id=stream_id)
 
             del self.unattached[port]
+        elif (stream_id is not None and len(self.autoattach_circuit) > 0):
+            log.debug("stream auto-attaching with id %s to circ %s." % (str(stream_id),str(self.autoattach_circuit[0])));
+            self._attach(stream_id=stream_id, circuit_id=self.autoattach_circuit[0]);
         else:
             # We maintain a dictionary of source ports that point to their
             # respective attaching function.  At this point we only know either
@@ -96,10 +111,12 @@ class Attacher(object):
             # function.
 
             if circuit_id:
+                log.debug("unattached circuit with id %s on port %d." % (str(circuit_id), port));
                 partially_attached = functools.partial(self._attach,
                                                        circuit_id=circuit_id)
                 self.unattached[port] = partially_attached
             else:
+                log.debug("unattached stream with id %s on port %d." % (str(stream_id), port));
                 partially_attached = functools.partial(self._attach,
                                                        stream_id=stream_id)
                 self.unattached[port] = partially_attached
@@ -134,10 +151,16 @@ def module_closure(queue, module, circ_id, *module_args, **module_kwargs):
         """
 
         try:
-            module(*module_args, **module_kwargs)
+            r = module(*module_args, **module_kwargs)
 
             log.debug("Informing event handler that module finished.")
             queue.put((circ_id, None))
+            
+            # the module may return its mutex, which needs to be released
+            # after the module has finished
+            if r is not None:
+                log.debug("releasing mutex %s" % str(r));
+                r.release();
         except KeyboardInterrupt:
             pass
 
@@ -195,6 +218,8 @@ class EventHandler(object):
             if sockname is None:
                 log.debug("Closing finished circuit %s." % circ_id)
                 try:
+                    if len(self.attacher.autoattach_circuit) > 0:
+                        self.attacher.autoattach_circuit.popleft();
                     self.controller.close_circuit(circ_id)
                 except stem.InvalidArguments as err:
                     log.debug("Could not close circuit because: %s" % err)
@@ -275,13 +300,15 @@ class EventHandler(object):
             self.controller.close_circuit(circ_event.id)
             return
 
+        if hasattr(self.module, "autoattach") and self.module.autoattach == True:
+            self.attacher.autoattach(circ_event.id);
         module = module_closure(self.queue, self.module.probe,
                                 circ_event.id, exit_desc,
                                 command.run_python_over_tor(self.queue,
                                                             circ_event.id,
                                                             self.socks_port),
                                 run_cmd_over_tor,
-                                destinations=self.exit_destinations[exit_fpr])
+                                destinations=self.exit_destinations[exit_fpr], socks_port=self.socks_port)
 
         proc = multiprocessing.Process(target=module)
         proc.daemon = True
@@ -316,9 +343,11 @@ class EventHandler(object):
         """
 
         if isinstance(event, stem.response.events.CircuitEvent):
+            log.debug("circuit event: status %s " % (str(event.status)));
             self.new_circuit(event)
 
         elif isinstance(event, stem.response.events.StreamEvent):
+            log.debug("stream event: to %s, status %s " % (event.target, str(event.status)));
             self.new_stream(event)
 
         else:

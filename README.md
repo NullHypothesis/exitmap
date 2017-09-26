@@ -99,6 +99,94 @@ underscores.  Here is an example:
     build_delay = 1
     analysis_dir = /path/to/exitmap_scans
 
+Advanced Binary Integrity Test Using the Tor Browser
+----------------------------------------------------
+
+To run the advancedBinaryIntegrity module, which runs tests over the Tor
+Browser, you need the following software:
+
+* tor
+* python2.7
+* python-stem
+* python-beautifulsoup
+* python-mechanize
+* python-requests
+* python-dnspython
+* python-psutil
+
+And the following additional python modules which provide the mozilla interface
+for marionette:
+
+* mozdevice
+* mozfile
+* mozinfo
+* mozlog
+* mozprocess
+* mozprofile
+* mozrunner
+* mozversion
+
+Unfortunately, some dependency packages require python 2.7 and are
+incompatible with python 3.
+
+Under Debian GNU/Linux, you can install the required software with:
+
+    $ sudo apt install tor python2.7 python-stem python-beautifulsoup python-mechanize python-requests python-dnspython python-psutil
+
+And the python modules with:
+
+    $ pip install -r requirements-abi.txt
+
+The marionette_driver module is included in the bin/ directory, because it
+needs to be modified to allow external shutdown requests to the browser.
+
+Next you need to download and unpack the Tor Browser software. The Tor Browser
+controlling module was only tested with `tor-browser_en-US` version.
+Change the location of the `tb_dir` parameter in the module source accordlingly.
+
+Several modifications of the Tor Browser are necessary.
+
+Start the Tor Browser and change the following things:
+
+* open firefox settings, and set Downloads to always download to the default location.
+* download some executable (eg. random installer from `filehippo.com`) and check the checkbox and click yes when asked for downloading an external file
+* install the following addons:
+  - https://addons.mozilla.org/en-US/firefox/addon/http-request-logger
+  - https://addons.mozilla.org/en-US/firefox/addon/enable-rightclick-and-copy/
+  - https://addons.mozilla.org/en-US/firefox/addon/ublock-origin/
+  http request logger is needed to find new POST requests for mail injection
+  ublock is required because the download buttons on the websites can't be clicked for some reason if ads are displayed
+  enable rightclick is needed to disallow websites from preventing right-clicks on the website
+* after installation of the ublock addon, go to download.cnet.com and click the button to permanently disable strict filtering for the site by ublock.
+* try to download an installer on cnet.com and do the same "permanent disable" for their CDN (dw.cbsi.com)
+* copy the mimeTypes.rdf file over the existing one in the folder
+  `tor-browser_en-US/Browser/TorBrowser/Data/Browser/profile.default/`
+  to make executables be auto-downloaded as well
+* create an empty file
+  `tor-browser_en-US/Browser/Desktop/http-request-log.txt`
+  eg. to do that under GNU/Linux, run in the shell:
+
+    touch <your torbrowser path>/tor-browser_en-US/Browser/Desktop/http-request-log.txt
+
+Then run the advancedBinaryIntegrity module like a normal module. It
+auto-starts the Tor Browser, runs tests and closes the Browser again.
+Scanning results are written to several files (one fingerprint per line):
+
+* successfully checked (unmodified binary): `success.txt`
+* were malicious (modified binary): `malicious.txt`
+* failed: `failed-fps.txt`
+* ran into timeout somewhere `timeout-fps.txt`
+
+It is recommended to split the list of Tor exits to scan into multiple
+sub-lists, especially if you want to scan all exits. Sometimes you have to
+re-try some exit nodes later or several times, because of timeouts and
+irregular throughput rates.
+
+You could for example take the `success.txt` file to generate a new list of exit nodes by running
+
+    grep -Fvxf success.txt Exitlist > Exitlist_new
+
+
 Alternatives
 ------------
 
