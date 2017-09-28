@@ -279,7 +279,12 @@ def cancel_all_downloads_and_exit(client,tb_proc):
         # reset context to Content
         client.set_context(client.CONTEXT_CONTENT);
         log.debug('cancelled dls');
-        client.quit(in_app=True); # quickpatching marionette driver necessary for this
+        # replication of quit(in_app=True) behaviour
+        client._request_in_app_shutdown()
+        # Ensure to explicitely mark the session as deleted
+        client.delete_session(send_request=False, reset_session_id=True)
+        # Give the application some time to shutdown
+        if client.instance: client.instance.runner.wait(timeout=self.DEFAULT_SHUTDOWN_TIMEOUT)
     except InvalidSessionIdException:
         # just continue if marionette client session is gone
         pass;

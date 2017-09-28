@@ -117,6 +117,7 @@ Browser, you need the following software:
 And the following additional python modules which provide the mozilla interface
 for marionette:
 
+* marionette_driver
 * mozdevice
 * mozfile
 * mozinfo
@@ -136,9 +137,6 @@ Under Debian GNU/Linux, you can install the required software with:
 And the python modules with:
 
     $ pip install -r requirements-abi.txt
-
-The marionette_driver module is included in the bin/ directory, because it
-needs to be modified to allow external shutdown requests to the browser.
 
 Next you need to download and unpack the Tor Browser software. The Tor Browser
 controlling module was only tested with `tor-browser_en-US` version.

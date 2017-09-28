@@ -1,3 +1,4 @@
+marionette_driver
 mozdevice
 mozfile
 mozinfo
