@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 
-# Copyright 2013-2016 Philipp Winter <phw@nymity.ch>
+# Copyright 2013-2017 Philipp Winter <phw@nymity.ch>
 #
 # This file is part of exitmap.
 #
@@ -182,7 +182,8 @@ def get_exits(data_dir,
         if stem.Flag.EXIT in cached_consensus.get(fpr, stub_desc).flags
     ]
 
-    log.info("%d relays have non-empty exit policy but no exit flag.",
+    log.info("In addition to %d exit relays, %d relays have non-empty exit "
+             "policy but no exit flag.", len(exit_candidates),
              len(have_exit_policy) - len(exit_candidates))
     if not exit_candidates:
         log.warning("No relays have both a non-empty exit policy and an exit "
