@@ -35,19 +35,20 @@ log = logging.getLogger(__name__)
 destinations = [("www.cloudflare.com", 443)]
 DOMAIN, PORT = destinations[0]
 
-CAPTCHA_SIGN = "Attention Required! | CloudFlare"
+CAPTCHA_SIGN = "Attention Required! | Cloudflare"
 
 # Mimic Tor Browser's request headers, so CloudFlare won't return a 403 because
 # it thinks we are a bot.
 
 HTTP_HEADERS = [("Host", DOMAIN),
-                ("User-Agent", "Mozilla/5.0 (Windows NT 6.1; rv:38.0) "
-                               "Gecko/20100101 Firefox/38.0"),
+                ("User-Agent", "Mozilla/5.0 (Windows NT 6.1; rv:52.0) "
+                 "Gecko/20100101 Firefox/52.0"),
                 ("Accept", "text/html,application/xhtml+xml,"
                            "application/xml;q=0.9,*/*;q=0.8"),
                 ("Accept-Language", "en-US,en;q=0.5"),
-                ("Accept-Encoding", "gzip, deflate"),
-                ("Content-Length", "0")]
+                ("Accept-Encoding", "gzip, deflate, br"),
+                ("Connection", "keep-alive"),
+                ("Upgrade-Insecure-Requests", "1")]
 
 
 def decompress(data):
