@@ -107,7 +107,7 @@ Don't like exitmap?  Then have a look at
 [SoaT](https://gitweb.torproject.org/torflow.git/tree/NetworkScanners/ExitAuthority/README.ExitScanning),
 [torscanner](https://code.google.com/p/torscanner/),
 [DetecTor](http://detector.io/DetecTor.html), or
-[SelekTOR](http://www.dazzleships.net/selektor-for-linux/).
+[SelekTOR](https://www.dazzleships.net/selektor-for-linux/).
 
 Tests
 -----
