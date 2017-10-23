@@ -196,5 +196,6 @@ def new_request(url, data=None):
     request.add_header("Accept-Language", "en-US,en;q=0.5")
     request.add_header("Accept-Encoding", "gzip, deflate")
     request.add_header("Connection", "keep-alive")
+    request.add_header("Upgrade-Insecure-Requests", "1")
 
     return request
