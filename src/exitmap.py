@@ -201,9 +201,31 @@ def parse_cmd_args():
     parser.add_argument("-V", "--version", action="version",
                         version="%(prog)s 2016.04.21")
 
-    parser.add_argument("module", nargs='+',
-                        help="Run the given module (available: %s)." %
-                        ", ".join(get_modules()))
+    subparsers = parser.add_subparsers(help='Module commands help',
+                        dest="module")
+
+    checktest = subparsers.add_parser("checktest",
+                        help="checktest sub-commands")
+
+    cloudflared = subparsers.add_parser("cloudflared",
+                        help="cloudflared sub-commands")
+
+    dnspoison = subparsers.add_parser("dnspoison",
+                        help="dnspoison sub-commands")
+    dnspoison.add_argument("-d", "--domains",
+                        help="A list of domains and their addresses", nargs="+")
+
+    dnssec = subparsers.add_parser("dnssec",
+                        help="dnssec sub-commands")
+
+    patchingCheck = subparsers.add_parser("patchingCheck",
+                        help="patchingCheck sub-commands")
+
+    rtt = subparsers.add_parser("rtt",
+                        help="rtt sub-commands")
+
+    testfds = subparsers.add_parser("testfds",
+                        help="testfds sub-commands")
 
     parser.set_defaults(**defaults)
 
@@ -263,16 +285,17 @@ def main():
                      " offline?" % args.first_hop)
         return 1
 
-    for module_name in args.module:
+    module_name = args.module
 
-        if args.analysis_dir is not None:
-            datestr = time.strftime("%Y-%m-%d_%H:%M:%S%z") + "_" + module_name
-            util.analysis_dir = os.path.join(args.analysis_dir, datestr)
+    if args.analysis_dir is not None:
+        datestr = time.strftime("%Y-%m-%d_%H:%M:%S%z") + "_" + module_name
+        util.analysis_dir = os.path.join(args.analysis_dir, datestr)
 
-        try:
-            run_module(module_name, args, controller, socks_port, stats)
-        except error.ExitSelectionError as err:
-            log.error("Failed to run because : %s" % err)
+    try:
+        run_module(module_name, args, controller, socks_port, stats)
+    except error.ExitSelectionError as err:
+        log.error("Failed to run because : %s" % err)
+
     return 0
 
 
@@ -354,7 +377,7 @@ def run_module(module_name, args, controller, socks_port, stats):
 
     if hasattr(module, "setup"):
         log.debug("Calling module's setup() function.")
-        module.setup()
+        module.setup(args)
 
     exit_destinations = select_exits(args, module)
 
