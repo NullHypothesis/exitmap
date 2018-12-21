@@ -140,10 +140,10 @@ def get_relays_in_country(country_code):
 
 def exiturl(exit_fpr):
     """
-    Return an Atlas link for the exit relay fingerprint.
+    Return a Metrics link for the exit relay fingerprint.
     """
 
-    return "<https://atlas.torproject.org/#details/%s>" % exit_fpr
+    return "<https://metrics.torproject.org/rs.html#details/%s>" % exit_fpr
 
 
 def dump_to_file(blurb, exit_fpr):
