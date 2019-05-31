@@ -57,10 +57,10 @@ class TestUtil(unittest.TestCase):
         self.assertIsNone(util.get_source_port(""))
 
     def test_exiturl(self):
-        self.assertEqual(util.exiturl("foo"), "<https://atlas.torproject.or"
-                         "g/#details/foo>")
-        self.assertEqual(util.exiturl(4), "<https://atlas.torproject.org/#det"
-                         "ails/4>")
+        self.assertEqual(util.exiturl("foo"), ("<https://metrics.torproject"
+                                               ".org/rs.html#details/foo>"))
+        self.assertEqual(util.exiturl(4), ("<https://metrics.torproject.org/"
+                                           "rs.html#details/4>"))
 
     def test_extract_pattern(self):
         extract_pattern1 = util.extract_pattern("Connection on fd 4 originat"
