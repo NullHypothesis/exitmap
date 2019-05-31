@@ -189,13 +189,12 @@ def new_request(url, data=None):
     # Note that the order of header fields is also relevant but urllib2 uses a
     # dictionary for headers, which is orderless.
 
-    request.add_header("User-Agent", "Mozilla/5.0 (Windows NT 6.1; rv:52.0) "
-                                     "Gecko/20100101 Firefox/52.0")
+    request.add_header("User-Agent", "Mozilla/5.0 (Windows NT 6.1; rv:60.0) "
+                                     "Gecko/20100101 Firefox/60.0")
     request.add_header("Accept", "text/html,application/xhtml+xml,"
                                  "application/xml;q=0.9,*/*;q=0.8")
     request.add_header("Accept-Language", "en-US,en;q=0.5")
-    request.add_header("Accept-Encoding", "gzip, deflate")
-    request.add_header("Connection", "keep-alive")
+    request.add_header("Accept-Encoding", "gzip, deflate, br")
     request.add_header("Upgrade-Insecure-Requests", "1")
 
     return request

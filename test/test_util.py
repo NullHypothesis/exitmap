@@ -79,7 +79,6 @@ class TestUtil(unittest.TestCase):
         self.assertTrue(result.has_header("Accept"))
         self.assertTrue(result.has_header("Accept-language"))
         self.assertTrue(result.has_header("Accept-encoding"))
-        self.assertTrue(result.has_header("Connection"))
 
     def test_parse_log_lines(self):
         ports = {"socks": -1, "control": -1}
