@@ -186,18 +186,25 @@ class _Torsocket(orig_socket):
             raise error.SOCKSv5Error("Domain must not be longer than 255 "
                                      "characters, but %d given." % domain_len)
 
-        # Tor defines a new command value, \x0f, that is used for domain
+        # Tor defines a new command value, \xf0, that is used for domain
         # resolution.
 
         self._send_all("\x05\xf0\x00\x03%s%s%s" %
                      (chr(domain_len), domain, "\x00\x00"))
 
-        resp = self._recv_all(10)
-        if resp[:2] != "\x05\x00":
+        respfirst4 = self._recv_all(4)
+        if respfirst4[:2] != "\x05\x00":
             raise error.SOCKSv5Error("Invalid server response: 0x%s" %
-                                     resp[1].encode("hex"))
+                                     respfirst4[1].encode("hex"))
 
-        return socket.inet_ntoa(resp[4:8])
+        if respfirst4[3] == "\x01":
+            resp = self._recv_all(4)
+            return socket.inet_ntoa(resp)
+        elif respfirst4[3] == "\x04":
+            resp = self._recv_all(16)
+            return socket.inet_ntop(socket.AF_INET6, resp)
+        else:
+            return "error"
 
     def connect(self, addr_tuple):
         err = self.connect_ex(addr_tuple)
