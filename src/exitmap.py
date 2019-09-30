@@ -81,7 +81,7 @@ def bootstrap_tor(args):
             },
             timeout=300,
             take_ownership=True,
-            completion_percent=80,
+            completion_percent=75,
             init_msg_handler=partial_parse_log_lines,
         )
         log.info("Successfully started Tor process (PID=%d)." % proc.pid)
