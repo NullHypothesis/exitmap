@@ -7,7 +7,7 @@ setup(
     author_email="phw@nymity.ch",
     packages=["exitmap"],
     package_dir={"exitmap": "src"},
-    entry_points={"console_scripts": ["exitmap = exitmap:main"]},
+    entry_points={"console_scripts": ["exitmap = exitmap.exitmap:main"]},
     license="GPLv3+",
     platforms="any",
 )
