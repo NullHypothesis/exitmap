@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # Copyright 2014-2016 Philipp Winter <phw@nymity.ch>
 # Copyright 2014 Josh Pitts <josh.pitts@leviathansecurity.com>
@@ -36,7 +36,7 @@ Then run:
 import sys
 import os
 try:
-    import urllib2
+    import urllib.request, urllib.error, urllib.parse
 except ImportError:
     import urllib.request as urllib2
 import tempfile
@@ -81,15 +81,15 @@ def setup():
 
     log.info("Creating temporary reference files.")
 
-    for url, _ in check_files.iteritems():
+    for url, _ in check_files.items():
 
         log.debug("Attempting to download <%s>." % url)
 
-        request = urllib2.Request(url)
+        request = urllib.request.Request(url)
         request.add_header('User-Agent', test_agent)
 
         try:
-            data = urllib2.urlopen(request).read()
+            data = urllib.request.urlopen(request).read()
         except Exception as err:
             log.warning("urlopen() failed: %s" % err)
 
@@ -111,7 +111,7 @@ def teardown():
 
     log.info("Removing reference files.")
 
-    for _, file_info in check_files.iteritems():
+    for _, file_info in check_files.items():
 
         orig_file, _ = file_info
         log.info("Removing file \"%s\"." % orig_file)
@@ -161,7 +161,7 @@ def run_check(exit_desc):
 
     exiturl = util.exiturl(exit_desc.fingerprint)
 
-    for url, file_info in check_files.iteritems():
+    for url, file_info in check_files.items():
 
         orig_file, orig_digest = file_info
 
@@ -169,11 +169,11 @@ def run_check(exit_desc):
 
         data = None
 
-        request = urllib2.Request(url)
+        request = urllib.request.Request(url)
         request.add_header('User-Agent', test_agent)
 
         try:
-            data = urllib2.urlopen(request, timeout=20).read()
+            data = urllib.request.urlopen(request, timeout=20).read()
         except Exception as err:
             log.warning("urlopen() failed for %s: %s" % (exiturl, err))
             continue

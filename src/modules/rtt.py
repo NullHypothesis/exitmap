@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # Copyright 2013-2016 Philipp Winter <phw@nymity.ch>
 # Copyright 2016 Zack Weinberg <zackw@panix.com>
@@ -231,7 +231,7 @@ def choose_probe_order(dests):
     remaining = {}
     last_appearance = {}
     full_address = {}
-    for host, usable_ports in hosts.iteritems():
+    for host, usable_ports in hosts.items():
         for p in PREFERRED_PORT_ORDER:
             if p in usable_ports:
                 full_address[host] = (host, p)
@@ -241,7 +241,7 @@ def choose_probe_order(dests):
     rv = []
     deadcycles = 0
     while remaining:
-        ks = remaining.keys()
+        ks = list(remaining.keys())
         x = random.choice(ks)
         last = last_appearance[x]
         if last == -1 or (len(rv) - last) >= (len(ks) // 4):

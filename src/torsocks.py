@@ -25,8 +25,9 @@ import socket
 import select
 import errno
 import logging
-
+import _socket
 import error
+import socks
 
 log = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ proxy_port = None
 queue      = None
 circ_id    = None
 
+_orig_getaddrinfo = socket.getaddrinfo
 orig_socket = socket.socket
 
 _ERRNO_RETRY = frozenset((errno.EAGAIN, errno.EWOULDBLOCK,
@@ -74,279 +76,66 @@ def send_queue(sock_name):
 
     global queue, circ_id
     assert (queue is not None) and (circ_id is not None)
-
     queue.put([circ_id, sock_name])
 
-
-class _Torsocket(orig_socket):
-
-    """
-    Provides a minimal, Tor-specific SOCKSv5 interface.
-    """
-
-    # Implementation note: socket.socket is (at least in Python 2) a
-    # wrapper object around _socket.socket. Most superclass methods
-    # cannot be invoked via the usual super().method(self, args...)
-    # construct.  One must use self._sock.method(args...) instead.
-
-    def __init__(self, family=socket.AF_INET, type=socket.SOCK_STREAM,
-                 proto=0, _sock=None):
-
-        self._sockfamily = family
-        self._socktype   = type
-        self._connecting = False
-        self._connected  = False
-        self._peer_addr  = None
-        self._conn_err   = None
-
-        super(_Torsocket, self).__init__(family, type, proto, _sock)
-
-        # FIXME: Arguably this should happen only on connect() so that
-        # attempts to connect to 127.0.0.1 can bypass the proxy server.
-        # However, that would make nonblocking mode significantly more
-        # complicated.  We'd need an actual state machine instead of
-        # just a pair of booleans, and callers would need to be
-        # prepared to 'turn the crank' on the state machine.
-        self._authenticate()
-
-    def _recv_all(self, num_bytes):
-        """
-        Try to read the given number of bytes, blocking indefinitely
-        if necessary (even if the socket is in nonblocking mode).
-
-        If we are unable to read all of it, an EOFError is raised.
-        """
-
-        data = ""
-        while len(data) < num_bytes:
+class _Torsocket(socks.socksocket):
+    def __init__(self, *args, **kwargs):
+        super(_Torsocket, self).__init__(*args, **kwargs)
+        orig_neg = self._proxy_negotiators[2]  # This is the original function
+        def ourneg(*args, **kwargs):
+            "Our modified function to add data to the queue"
             try:
-                more = self._sock.recv(num_bytes - len(data))
-            except socket.error as e:
-                if e.errno not in _ERRNO_RETRY:
-                    raise
+                # we are adding to the queue before as orig_neg will also do
+                # the actual connection to the destination inside.
+                # args[0] is the original socket to the proxy address
+                send_queue(args[0].getsockname())
+                orig_neg(*args, **kwargs)
+            except Exception as e:
+                log.debug("Error in custom negotiation function: {}".format(e))
+        self._proxy_negotiators[2] = ourneg
 
-                select.select([self], [], [])
-                continue
+    def negotiate(self):
+        proxy_type, addr, port, rdns, username, password = self.proxy
+        socks._BaseSocket.connect(self, (addr, port))
+        socks._BaseSocket.sendall(self, struct.pack('BBB', 0x05, 0x01, 0x00))
+        socks._BaseSocket.recv(self, 2)
 
-            if not more:
-                raise EOFError("Could read only %d of expected %d bytes." %
-                               (len(data), num_bytes))
-            data += more
-
-        return data
-
-    def _send_all(self, msg):
-        """
-        Try to send all of 'msg', blocking indefinitely if necessary
-        (even if the socket is in nonblocking mode).
-        """
-
-        sent = 0
-        while sent < len(msg):
-            try:
-                n = self._sock.send(msg[sent:])
-            except socket.error as e:
-                if e.errno not in _ERRNO_RETRY:
-                    raise
-
-                select.select([], [self], [])
-                continue
-
-            if not n:
-                raise EOFError("Could send only %d of expected %d bytes." %
-                               (sent, len(msg)))
-            sent += n
-
-    def _authenticate(self):
-        """
-        Authenticate to our SOCKSv5 server.
-        """
-
-        assert (proxy_addr is not None) and (proxy_port is not None)
-
-        # Connect to SOCKSv5 server.  We use version 5 and one authentication
-        # method, which is "no authentication".
-
-        self._sock.connect((proxy_addr, proxy_port))
-        self._send_all("\x05\x01\x00")
-        resp = self._recv_all(2)
-        if resp != "\x05\x00":
-            raise error.SOCKSv5Error("Invalid server response: 0x%s" %
-                                     resp.encode("hex"))
-
-        send_queue(self.getsockname())
-
-    def resolve(self, domain):
-        """
-        Resolve the given domain using Tor's SOCKS resolution extension.
-        """
-
-        domain_len = len(domain)
-        if domain_len > 255:
-            raise error.SOCKSv5Error("Domain must not be longer than 255 "
-                                     "characters, but %d given." % domain_len)
-
-        # Tor defines a new command value, \x0f, that is used for domain
-        # resolution.
-
-        self._send_all("\x05\xf0\x00\x03%s%s%s" %
-                     (chr(domain_len), domain, "\x00\x00"))
-
-        resp = self._recv_all(10)
-        if resp[:2] != "\x05\x00":
-            raise error.SOCKSv5Error("Invalid server response: 0x%s" %
-                                     resp[1].encode("hex"))
-
-        return socket.inet_ntoa(resp[4:8])
-
-    def connect(self, addr_tuple):
-        err = self.connect_ex(addr_tuple)
-        if err:
-            raise socket.error(err, os.strerror(err))
-
-    def connect_ex(self, addr_tuple):
-        """
-        Tell SOCKS server to connect to our destination.
-        """
-
-        dst_addr, dst_port = addr_tuple[0], int(addr_tuple[1])
-        self._connecting = True
-        self._peer_addr = (dst_addr, dst_port)
-
-        log.debug("Requesting connection to %s:%d.", dst_addr, dst_port)
-
-        self._send_all("\x05\x01\x00\x01%s%s" %
-                     (socket.inet_aton(dst_addr), struct.pack(">H", dst_port)))
-
-        return self._attempt_finish_socks_handshake()
-
-    def _attempt_finish_socks_handshake(self):
-        # Receive the first byte of the server reply using the
-        # underlying recv() primitive, and suspend this operation if
-        # it comes back with EAGAIN, or fail it if it gives an error.
-        # Callers of connect_ex expect to get EINPROGRESS, not EAGAIN.
-        log.debug("Attempting to read SOCKS reply.")
-        try:
-            resp0 = self._sock.recv(1)
-        except socket.error as e:
-            if e.errno in _ERRNO_RETRY:
-                log.debug("SOCKS reply not yet available.")
-                return errno.EINPROGRESS
-
-            log.debug("Connection failure: %s", e)
-            self._connecting = False
-            self._conn_err = e.errno
-            return e.errno
-
-        if resp0 != "\x05":
-            self._connecting = False
-            raise error.SOCKSv5Error(
-                "Protocol error: server reply begins with 0x%02x, not 0x05"
-                % ord(resp0))
-
-        # We are now committed to receiving and processing the server
-        # response.
-        resp = self._recv_all(3)
-        if resp[0] != "\x00":
-            self._connecting = False
-            val = ord(resp[0])
-            if val in socks5_errors:
-                self._conn_err = socks5_errors[val]
-                log.debug("Connection failure at protocol level: %s",
-                          os.strerror(self._conn_err))
-                return self._conn_err
+    def resolve(self, hostname):
+        "Resolves the given domain name over the proxy"
+        host = hostname.encode("utf-8")
+        # First connect to the local proxy
+        self.negotiate()
+        send_queue(socks._BaseSocket.getsockname(self))
+        req = struct.pack('BBB', 0x05, 0xF0, 0x00)
+        req += chr(0x03).encode() + chr(len(host)).encode() + host
+        req = req + struct.pack(">H", 8444)
+        socks._BaseSocket.sendall(self, req)
+        # Get the response
+        ip = ""
+        resp = socks._BaseSocket.recv(self, 4)
+        if resp[0:1] != chr(0x05).encode():
+            socks._BaseSocket.close(self)
+            raise error.SOCKSv5Error("SOCKS Server error")
+        elif resp[1:2] != chr(0x00).encode():
+            # Connection failed
+            socks._BaseSocket.close(self)
+            if ord(resp[1:2])<=8:
+                raise error.SOCKSv5Error("SOCKS Server error {}".format(ord(resp[1:2])))
             else:
-                raise error.SOCKSv5Error("Unrecognized SOCKSv5 error: %d" % val)
-
-        # Read and discard the rest of the reply, which consists of an
-        # address type (1 byte), variable-length address (depending on the
-        # address type), and port number (2 bytes).
-        if resp[2] == "\x01":
-            self._recv_all(4)
-        elif resp[2] == "\x03":
-            length = self._recv_all(1)
-            self._recv_all(ord(length))
+                raise error.SOCKSv5Error("SOCKS Server error 9")
+        # Get the bound address/port
+        elif resp[3:4] == chr(0x01).encode():
+            ip = socket.inet_ntoa(socks._BaseSocket.recv(self, 4))
+        elif resp[3:4] == chr(0x03).encode():
+            resp = resp + socks._BaseSocket.recv(self, 1)
+            ip = socks._BaseSocket.recv(self, ord(resp[4:5]))
         else:
-            self._recv_all(16)
-        self._recv_all(2)
+            socks._BaseSocket.close(self)
+            raise error.SOCKSv5Error("SOCKS Server error.")
+        boundport = struct.unpack(">H", socks._BaseSocket.recv(self, 2))[0]
+        socks._BaseSocket.close(self)
+        return ip
 
-        # We are now officially connected.
-        log.debug("Now connected to %s:%d.", *self._peer_addr)
-        self._connected = True
-        return 0
-
-    def _maybe_finish_socks_handshake(self):
-        if self._connected:
-            return
-        if not self._connecting:
-            raise socket.error(errno.ENOTCONN, os.strerror(errno.ENOTCONN))
-
-        err = self._attempt_finish_socks_handshake()
-        if err:
-            # Callers of _this_ function expect EAGAIN, not EINPROGRESS.
-            if err in _ERRNO_RETRY:
-                raise socket.error(errno.EAGAIN, os.strerror(errno.EAGAIN))
-            raise socket.error(err, os.strerror(err))
-
-    # All of these functions must be prepared to process the final
-    # message of the SOCKS handshake.
-    def send(self, *args):
-        self._maybe_finish_socks_handshake()
-        return self._sock.send(*args)
-
-    def sendall(self, *args):
-        self._maybe_finish_socks_handshake()
-        return self._sock.sendall(*args)
-
-    def recv(self, *args):
-        self._maybe_finish_socks_handshake()
-        return self._sock.recv(*args)
-
-    def recv_into(self, *args):
-        self._maybe_finish_socks_handshake()
-        return self._sock.recv_into(*args)
-
-    def makefile(self, *args):
-        # This one is a normal method on socket.socket.
-        self._maybe_finish_socks_handshake()
-        return super(_Torsocket, self).makefile(*args)
-
-    # These sockets can only be used as client sockets.
-    def accept(self): raise NotImplementedError
-
-    def bind(self): raise NotImplementedError
-
-    def listen(self): raise NotImplementedError
-
-    # These sockets can only be used as connected sockets.
-    def sendto(self, *a): raise NotImplementedError
-
-    def recvfrom(self, *a): raise NotImplementedError
-
-    def recvfrom_into(self, *a): raise NotImplementedError
-
-    # Provide information about the ultimate destination, not the
-    # proxy server.  On normal sockets, getpeername() works immediately
-    # after connect(), even if it returned EINPROGRESS.
-    def getpeername(self):
-        if not self._connecting:
-            raise socket.error(errno.ENOTCONN, os.strerror(errno.ENOTCONN))
-        return self._peer_addr
-
-    # Provide the pending connection error if appropriate.
-    def getsockopt(self, level, opt, *args):
-        if level == socket.SOL_SOCKET and opt == socket.SO_ERROR:
-            if self._connecting:
-                err = self._attempt_finish_socks_handshake()
-                if err == errno.EINPROGRESS:
-                    return 0  # there's no pending connection error yet
-
-            if self._conn_err is not None:
-                err = self._conn_err
-                self._conn_err = None
-                return err
-
-        return self._sock.getsockopt(level, opt, *args)
 
 
 def torsocket(family=socket.AF_INET, type=socket.SOCK_STREAM,
@@ -375,6 +164,8 @@ def torsocket(family=socket.AF_INET, type=socket.SOCK_STREAM,
 
     return _Torsocket(family, type, proto, _sock)
 
+def getaddrinfo(*args):
+    return [(socket.AF_INET, socket.SOCK_STREAM, 6, '', (args[0], args[1]))]
 
 class MonkeyPatchedSocket(object):
     """
@@ -408,7 +199,9 @@ class MonkeyPatchedSocket(object):
         circ_id               = self._circ_id
         proxy_addr            = self._socks_addr
         proxy_port            = self._socks_port
+        socks.set_default_proxy(socks.SOCKS5, proxy_addr, proxy_port, True, None, None)
         socket.socket         = torsocket
+        socket.getaddrinfo    = getaddrinfo
 
         return self
 
@@ -420,5 +213,6 @@ class MonkeyPatchedSocket(object):
         proxy_addr            = self._orig_proxy_addr
         proxy_port            = self._orig_proxy_port
         socket.socket         = self._orig_socket
+        socket.getaddrinfo    = _orig_getaddrinfo
 
         return False
