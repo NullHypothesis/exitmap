@@ -1,3 +1,6 @@
+2020-11-23: Changes in version 2020-11-23:
+	- Thanks to Kushal Das, the code base is now Python 3.
+
 2019-05-30: Changes in version 2019-05-30:
 	- Resemble HTTP headers of latest Tor Browser.
 	- Code maintenance.
