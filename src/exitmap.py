@@ -28,7 +28,7 @@ import argparse
 import datetime
 import random
 import logging
-import ConfigParser
+from configparser import ConfigParser
 import functools
 import pwd
 
@@ -114,7 +114,7 @@ def parse_cmd_args():
         home_dir = os.path.expanduser("~")
         config_file = os.path.join(home_dir, ".exitmaprc")
 
-    config_parser = ConfigParser.SafeConfigParser()
+    config_parser = ConfigParser()
     file_parsed = config_parser.read([config_file])
     if file_parsed:
         try:

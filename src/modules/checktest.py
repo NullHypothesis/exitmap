@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # Copyright 2013-2017 Philipp Winter <phw@nymity.ch>
 #
@@ -24,10 +24,9 @@ Module to detect false negatives for <https://check.torproject.org>.
 import sys
 import json
 import logging
-try:
-    import urllib2
-except ImportError:
-    import urllib.request as urllib2
+import urllib.request
+import socks
+import socket
 
 from util import exiturl
 
@@ -50,10 +49,10 @@ def fetch_page(exit_desc):
     url = exiturl(exit_desc.fingerprint)
 
     try:
-        data = urllib2.urlopen("https://check.torproject.org/api/ip",
+        data = urllib.request.urlopen("https://check.torproject.org/api/ip",
                                timeout=10).read()
     except Exception as err:
-        log.debug("urllib2.urlopen says: %s" % err)
+        log.debug("urllib.request.urlopen says: %s" % err)
         return
 
     if not data:

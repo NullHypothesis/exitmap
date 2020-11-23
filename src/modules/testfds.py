@@ -25,14 +25,12 @@ that the relay (probably) has enough file descriptors.
 import sys
 import re
 import logging
-try:
-    import urllib2
-except ImportError:
-    import urllib.request as urllib2
+import urllib.request, urllib.error, urllib.parse
 
 from util import exiturl
 
 import stem.descriptor.server_descriptor as descriptor
+import socks
 
 log = logging.getLogger(__name__)
 
@@ -50,10 +48,10 @@ def fetch_page(exit_desc):
 
     data = None
     try:
-        data = urllib2.urlopen("https://people.torproject.org/~phw/check_file",
-                               timeout=10).read()
+        data = urllib.request.urlopen("https://people.torproject.org/~phw/check_file",
+                               timeout=10).read().decode("utf-8")
     except Exception as err:
-        log.warning("urllib2.urlopen for %s says: %s." %
+        log.warning("urllib.request.urlopen for %s says: %s." %
                     (exit_desc.fingerprint, err))
         return
 

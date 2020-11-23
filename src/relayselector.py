@@ -178,7 +178,7 @@ def get_exits(data_dir,
 
     exit_candidates = [
         desc
-        for fpr, desc in have_exit_policy.iteritems()
+        for fpr, desc in have_exit_policy.items()
         if stem.Flag.EXIT in cached_consensus.get(fpr, stub_desc).flags
     ]
 

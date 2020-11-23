@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # Copyright 2016 Philipp Winter <phw@nymity.ch>
 #
@@ -22,9 +22,9 @@ Check if a web site returns a CloudFlare CAPTCHA.
 """
 
 import sys
-import StringIO
+import io
 import gzip
-import httplib
+import http.client
 import collections
 import logging
 
@@ -35,7 +35,7 @@ log = logging.getLogger(__name__)
 destinations = [("www.cloudflare.com", 443)]
 DOMAIN, PORT = destinations[0]
 
-CAPTCHA_SIGN = "Attention Required! | Cloudflare"
+CAPTCHA_SIGN = b"Attention Required! | Cloudflare"
 
 # Mimic Tor Browser's request headers, so CloudFlare won't return a 403 because
 # it thinks we are a bot.
@@ -57,7 +57,7 @@ def decompress(data):
     """
 
     try:
-        buf = StringIO.StringIO(data)
+        buf = io.StringIO(data)
         fileobj = gzip.GzipFile(fileobj=buf)
         data = fileobj.read()
     except Exception:
@@ -74,7 +74,7 @@ def is_cloudflared(exit_fpr):
     exit_url = util.exiturl(exit_fpr)
     log.debug("Probing exit relay \"%s\"." % exit_url)
 
-    conn = httplib.HTTPSConnection(DOMAIN, PORT, strict=False)
+    conn = http.client.HTTPSConnection(DOMAIN, PORT)
     conn.request("GET", "/", headers=collections.OrderedDict(HTTP_HEADERS))
     try:
         response = conn.getresponse()
