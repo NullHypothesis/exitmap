@@ -1,5 +1,7 @@
 ![exitmap logo](doc/logo.png)
-=============================
+
+**This repository is unmaintained.
+Refer to [The Tor Project's](https://gitlab.torproject.org/tpo/network-health/exitmap) fork.**
 
 Overview
 --------
