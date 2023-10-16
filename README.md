@@ -1,8 +1,6 @@
 ![exitmap logo](doc/logo.png)
 =============================
 
-[![Build Status](https://travis-ci.org/NullHypothesis/exitmap.svg?branch=master)](https://travis-ci.org/NullHypothesis/exitmap)
-
 Overview
 --------
 
